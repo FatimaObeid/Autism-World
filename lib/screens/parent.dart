@@ -1,4 +1,5 @@
 import 'package:autism_world/screens/bookAppointment.dart';
+import 'package:autism_world/screens/childPage.dart';
 import 'package:autism_world/screens/dailyProgress.dart';
 import 'package:autism_world/screens/events.dart';
 import 'package:autism_world/screens/resources.dart';
@@ -49,6 +50,20 @@ class _ParentPageState extends State<ParentPage> {
                 crossAxisSpacing: 15,
                 mainAxisSpacing: 15,
                 children: [
+                  _buildMenuCard(
+                    context,
+                    "Child Profile",
+                    Icons.child_care,
+                    Colors.indigo,
+                    () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const Childpage(),
+                        ),
+                      );
+                    },
+                  ),
                   _buildMenuCard(
                     context,
                     "Book Appointment",
@@ -108,7 +123,9 @@ class _ParentPageState extends State<ParentPage> {
                   _buildMenuCard(
                     context,
                     "Community Events",
+
                     Icons.celebration, // A fun icon for events
+
                     Colors.teal,
                     () {
                       Navigator.push(
