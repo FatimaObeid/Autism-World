@@ -1,203 +1,169 @@
-import 'package:autism_world/screens/register.dart';
 import 'package:flutter/material.dart';
+import 'package:autism_world/l10n/app_localizations.dart';
 
-class LoginPage extends StatefulWidget {
-  const LoginPage({super.key});
+class EventsScreen extends StatelessWidget {
+  EventsScreen({super.key});
 
-  @override
-  State<LoginPage> createState() => _LoginPageState();
-}
+  static const Color primaryBlue = Color(0xFF1E88E5);
 
-class _LoginPageState extends State<LoginPage> {
-  final _emailController = TextEditingController();
-  final _passwordController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
-
-  @override
-  void dispose() {
-    _emailController.dispose();
-    _passwordController.dispose();
-    super.dispose();
-  }
+  // Bilingual event data
+  final List<Map<String, dynamic>> events = [
+    {
+      "title_en": "Sensory-Friendly Morning",
+      "title_ar": "صباح مناسب للحواس",
+      "date": "Oct 12, 10:00 AM",
+      "location_en": "City Aquarium",
+      "location_ar": "أكواريوم المدينة",
+      "description_en":
+          "Lights are dimmed and sounds are turned down for a comfortable experience.",
+      "description_ar": "يتم خفض الإضاءة والأصوات لتجربة مريحة.",
+    },
+    {
+      "title_en": "Autism-Friendly Movie",
+      "title_ar": "فيلم مناسب للتوحد",
+      "date": "Oct 15, 2:00 PM",
+      "location_en": "Cinema One",
+      "location_ar": "سينما ون",
+      "description_en":
+          "Low sound, lights slightly up, and freedom to move around the theater.",
+      "description_ar":
+          "صوت منخفض، إضاءة مرتفعة قليلاً، وحرية الحركة في أرجاء الصالة.",
+    },
+    {
+      "title_en": "Adaptive Sports Day",
+      "title_ar": "يوم رياضي تكيفي",
+      "date": "Oct 20, 9:00 AM",
+      "location_en": "Central Park",
+      "location_ar": "الحديقة المركزية",
+      "description_en":
+          "Specialized coaches helping kids enjoy soccer and track in a safe environment.",
+      "description_ar":
+          "مدربون متخصصون يساعدون الأطفال على الاستمتاع بكرة القدم وألعاب القوى في بيئة آمنة.",
+    },
+  ];
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Colors.white,
+    final l10n = AppLocalizations.of(context)!;
+    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
 
-      body: Center(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(24.0),
-          child: Form(
-            key: _formKey,
+    return Scaffold(
+      appBar: AppBar(
+        title: Text(l10n.eventsTitle),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        foregroundColor: Colors.black87,
+      ),
+      body: ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: events.length,
+        itemBuilder: (context, index) {
+          final event = events[index];
+          final title = isArabic ? event['title_ar'] : event['title_en'];
+          final location = isArabic
+              ? event['location_ar']
+              : event['location_en'];
+          final description = isArabic
+              ? event['description_ar']
+              : event['description_en'];
+          final date = event['date'];
+
+          return Card(
+            elevation: 2,
+            margin: const EdgeInsets.only(bottom: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(15),
+            ),
             child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  padding: const EdgeInsets.all(16),
-                  decoration: const BoxDecoration(
-                    color: Colors.blue,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    Icons.favorite_outline,
-                    color: Colors.white,
-                    size: 40,
-                  ),
-                ),
-                const SizedBox(height: 24),
-                const Text(
-                  "Autism Community",
-                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  "Welcome back! Please login to continue",
-                  style: TextStyle(color: Colors.grey),
-                ),
-                const SizedBox(height: 40),
-
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _emailController,
-                      decoration: InputDecoration(
-                        hintText: "john@gmail.com",
-                        labelText: "Email",
-                        hintStyle: TextStyle(color: Colors.grey[400]),
-                        prefixIcon: const Icon(
-                          Icons.email_outlined,
-                          color: Colors.grey,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return "Please enter your email";
-                        }
-                        if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                          return "Please enter a valid email";
-                        }
-                        return null;
-                      },
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 20),
-
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 8),
-                    TextFormField(
-                      controller: _passwordController,
-                      obscureText: true,
-                      decoration: InputDecoration(
-                        hintText: "password",
-                        labelText: "Password",
-                        hintStyle: const TextStyle(
-                          letterSpacing: 2,
-                          color: Colors.grey,
-                        ),
-                        prefixIcon: const Icon(
-                          Icons.lock_outline,
-                          color: Colors.grey,
-                        ),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        enabledBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(12),
-                          borderSide: BorderSide(color: Colors.grey.shade300),
-                        ),
-                      ),
-                      validator: (value) {
-                        if (value == null || value.isEmpty) {
-                          return "Please enter your password";
-                        }
-                        if (value.length < 6) {
-                          return "Password must be at least 6 characters";
-                        }
-                        return null;
-                      },
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 32),
-
-                SizedBox(
+                  height: 120,
                   width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      if (_formKey.currentState!.validate()) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text("Login successful!"),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.blue,
-                      foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                    child: const Text(
-                      "Login",
-                      style: TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+                  decoration: BoxDecoration(
+                    color: primaryBlue.withOpacity(0.1),
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(15),
                     ),
                   ),
+                  child: Icon(
+                    Icons.event_available,
+                    size: 50,
+                    color: primaryBlue,
+                  ),
                 ),
-
-                const SizedBox(height: 24),
-
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    const Text(
-                      "Don't have an account? ",
-                      style: TextStyle(color: Colors.grey),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const RegisterPage(),
-                          ),
-                        );
-                      },
-                      child: const Text(
-                        "Register here",
-                        style: TextStyle(
+                Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 18,
                           fontWeight: FontWeight.bold,
-                          color: Colors.blue,
                         ),
                       ),
-                    ),
-                  ],
+                      const SizedBox(height: 8),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.calendar_month,
+                            size: 16,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            date,
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 4),
+                      Row(
+                        children: [
+                          const Icon(
+                            Icons.location_on,
+                            size: 16,
+                            color: Colors.grey,
+                          ),
+                          const SizedBox(width: 5),
+                          Text(
+                            location,
+                            style: const TextStyle(color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 12),
+                      Text(
+                        description,
+                        style: TextStyle(color: Colors.grey[800]),
+                      ),
+                      const SizedBox(height: 15),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton(
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: primaryBlue,
+                            foregroundColor: Colors.white,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          onPressed: () {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              SnackBar(content: Text(l10n.interestNoted)),
+                            );
+                          },
+                          child: Text(l10n.imInterested),
+                        ),
+                      ),
+                    ],
+                  ),
                 ),
               ],
             ),
-          ),
-        ),
+          );
+        },
       ),
     );
   }
