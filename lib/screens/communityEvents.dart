@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:autism_world/l10n/app_localizations.dart';
 
 class CommunityEventsPage extends StatefulWidget {
   const CommunityEventsPage({super.key});
@@ -8,25 +9,29 @@ class CommunityEventsPage extends StatefulWidget {
 }
 
 class _CommunityEventsPageState extends State<CommunityEventsPage> {
-  // Professional Blue Theme
-  final Color _themeColor = const Color(0xFF1E88E5);
+  // --- Unified Design Constants ---
+  static const _bgColor = Color(0xFFFAFAFA);
+  static const _cardColor = Colors.white;
+  static const _textPrimary = Colors.black;
+  static const _textSecondary = Colors.grey;
+  static const _tealColor = Colors.teal; // Matches the dashboard button color
+  static const _successColor = Colors.green;
 
-  // --- 1. DATA (Only 3 Items) ---
   final List<Map<String, dynamic>> _events = [
     {
       "title": "🧠 Advanced CBT Training",
       "date": "Feb 28",
       "time": "09:00 AM",
       "location": "Medical Center",
-      "category": "Training",
-      "joined": true, // Default: User has joined this
+      "categoryKey": "Training",
+      "joined": true,
     },
     {
       "title": "🤝 Clinical Supervision",
       "date": "Mar 05",
       "time": "02:00 PM",
       "location": "Zoom / Virtual",
-      "category": "Peer Review",
+      "categoryKey": "Peer Review",
       "joined": false,
     },
     {
@@ -34,200 +39,192 @@ class _CommunityEventsPageState extends State<CommunityEventsPage> {
       "date": "Mar 12",
       "time": "08:30 AM",
       "location": "Grand Hotel",
-      "category": "Conference",
+      "categoryKey": "Conference",
       "joined": false,
     },
   ];
 
-  // --- 2. LOGIC (Pass the event object directly) ---
-  void _toggleJoin(Map<String, dynamic> event) {
+  void _toggleJoin(Map<String, dynamic> event, AppLocalizations l10n) {
     setState(() {
       event['joined'] = !event['joined'];
     });
-
     bool nowJoined = event['joined'];
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          nowJoined ? "Seat reserved! 📅" : "Reservation cancelled.",
+          nowJoined ? l10n.seatReserved : l10n.reservationCancelled,
         ),
-        backgroundColor: nowJoined ? _themeColor : Colors.grey,
-        behavior: SnackBarBehavior.floating,
-        duration: const Duration(seconds: 1),
+        backgroundColor: nowJoined ? _tealColor : _successColor,
       ),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final myEvents = _events.where((e) => e['joined'] == true).toList();
+    final l10n = AppLocalizations.of(context)!;
 
-    return DefaultTabController(
-      length: 2,
-      child: Scaffold(
-        backgroundColor: const Color(0xFFF5F7FA), // Light Grey Background
-
-        appBar: AppBar(
-          backgroundColor: _themeColor,
-          elevation: 0,
-          centerTitle: true,
-          title: const Column(
-            children: [
-              Text(
-                "Professional Development",
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 20),
-              ),
-              Text(
-                "Psychology & Autism Support",
-                style: TextStyle(fontSize: 12, fontWeight: FontWeight.normal),
-              ),
-            ],
-          ),
-          bottom: const TabBar(
-            indicatorColor: Colors.white,
-            indicatorWeight: 3,
-            labelStyle: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            tabs: [
-              Tab(text: "All Events"),
-              Tab(text: "My Schedule"),
-            ],
+    return Scaffold(
+      backgroundColor: _bgColor,
+      appBar: AppBar(
+        backgroundColor: _bgColor, // Unified with other pages
+        elevation: 0,
+        iconTheme: const IconThemeData(color: _textPrimary),
+        title: Text(
+          l10n.communityEventsSpecialistTitle,
+          style: const TextStyle(
+            fontWeight: FontWeight.bold,
+            fontSize: 20,
+            color: _textPrimary,
           ),
         ),
-
-        // --- BODY ---
-        body: TabBarView(
-          children: [
-            // TAB 1: All Events
-            ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: _events.length,
-              itemBuilder: (context, index) {
-                return _buildCard(_events[index]);
-              },
-            ),
-
-            // TAB 2: My Schedule
-            myEvents.isEmpty
-                ? Center(
-                    child: Text(
-                      "No events registered yet.",
-                      style: TextStyle(color: Colors.grey[500]),
-                    ),
-                  )
-                : ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: myEvents.length,
-                    itemBuilder: (context, index) {
-                      return _buildCard(myEvents[index]);
-                    },
-                  ),
-          ],
-        ),
+      ),
+      body: ListView.builder(
+        padding: const EdgeInsets.all(
+          20,
+        ), // Matches UpcomingAppointments padding
+        itemCount: _events.length,
+        itemBuilder: (context, index) {
+          return _buildCard(_events[index], l10n);
+        },
       ),
     );
   }
 
-  // --- 3. OPTIMIZED CARD WIDGET ---
-  Widget _buildCard(Map<String, dynamic> item) {
+  Widget _buildCard(Map<String, dynamic> item, AppLocalizations l10n) {
     bool isJoined = item['joined'];
+    String category;
+
+    switch (item['categoryKey']) {
+      case 'Training':
+        category = l10n.categoryTraining;
+        break;
+      case 'Peer Review':
+        category = l10n.categoryPeerReview;
+        break;
+      default:
+        category = l10n.categoryConference;
+    }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
-
-      // DECORATION: Handles Shape, Shadow, and the Blue Strip (via Border)
       decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(12),
-        // This 'left' border replaces the IntrinsicHeight/Row method
-        border: Border(left: BorderSide(color: _themeColor, width: 6.0)),
+        color: _cardColor,
+        borderRadius: BorderRadius.circular(16), // Unified border radius
+        border: Border.all(color: Colors.grey.shade200), // Unified border
         boxShadow: [
-          BoxShadow(
-            color: Colors.grey.withOpacity(0.1),
-            blurRadius: 6,
-            offset: const Offset(0, 3),
-          ),
-        ],
+          BoxShadow(color: Colors.grey.withOpacity(0.05), blurRadius: 10),
+        ], // Unified shadow
       ),
-
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Header: Category & Date
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(16),
+        child: Container(
+          decoration: const BoxDecoration(
+            border: Border(left: BorderSide(color: _tealColor, width: 5.0)),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(16.0),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  item['category'].toUpperCase(),
-                  style: TextStyle(
-                    color: _themeColor,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 12,
-                  ),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    // Unified Tag Style
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 4,
+                      ),
+                      decoration: BoxDecoration(
+                        color: _tealColor.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Text(
+                        category.toUpperCase(),
+                        style: const TextStyle(
+                          color: _tealColor,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 10,
+                        ),
+                      ),
+                    ),
+                    Text(
+                      item['date'],
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        color: _textSecondary,
+                      ),
+                    ),
+                  ],
                 ),
+                const SizedBox(height: 12),
                 Text(
-                  item['date'],
+                  item['title'],
                   style: const TextStyle(
+                    fontSize: 18,
                     fontWeight: FontWeight.bold,
-                    color: Colors.grey,
+                    color: _textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    const Icon(
+                      Icons.location_on,
+                      size: 15,
+                      color: _textSecondary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      item['location'],
+                      style: const TextStyle(
+                        color: _textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    const Icon(
+                      Icons.access_time,
+                      size: 15,
+                      color: _textSecondary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      item['time'],
+                      style: const TextStyle(
+                        color: _textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+                SizedBox(
+                  width: double.infinity,
+                  height: 44,
+                  child: ElevatedButton(
+                    onPressed: () => _toggleJoin(item, l10n),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: isJoined ? _cardColor : _tealColor,
+                      foregroundColor: isJoined ? _tealColor : Colors.white,
+                      elevation: 0,
+                      side: const BorderSide(color: _tealColor, width: 1.5),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: Text(
+                      isJoined ? l10n.registered : l10n.reserveSpot,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                      ),
+                    ),
                   ),
                 ),
               ],
             ),
-            const SizedBox(height: 8),
-
-            // Title
-            Text(
-              item['title'],
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.bold,
-                color: Colors.black87,
-              ),
-            ),
-            const SizedBox(height: 8),
-
-            // Location & Time
-            Row(
-              children: [
-                const Icon(Icons.location_on, size: 14, color: Colors.grey),
-                const SizedBox(width: 4),
-                Text(
-                  item['location'],
-                  style: const TextStyle(color: Colors.grey),
-                ),
-                const SizedBox(width: 15),
-                const Icon(Icons.access_time, size: 14, color: Colors.grey),
-                const SizedBox(width: 4),
-                Text(item['time'], style: const TextStyle(color: Colors.grey)),
-              ],
-            ),
-            const SizedBox(height: 16),
-
-            // Action Button
-            SizedBox(
-              width: double.infinity,
-              height: 40,
-              child: ElevatedButton(
-                onPressed: () => _toggleJoin(item),
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: isJoined ? Colors.white : _themeColor,
-                  foregroundColor: isJoined ? _themeColor : Colors.white,
-                  elevation: 0,
-                  side: BorderSide(color: _themeColor),
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                ),
-                child: Text(
-                  isJoined ? "Registered ✓" : "Reserve Spot",
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-              ),
-            ),
-          ],
+          ),
         ),
       ),
     );
