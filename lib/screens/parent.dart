@@ -1,10 +1,11 @@
-import 'package:autism_world/screens/bookAppointment.dart';
 import 'package:autism_world/screens/childPage.dart';
-import 'package:autism_world/screens/dailyProgress.dart';
-import 'package:autism_world/screens/events.dart';
-import 'package:autism_world/screens/resources.dart';
-import 'package:autism_world/screens/specialistList.dart';
 import 'package:flutter/material.dart';
+import 'package:autism_world/Parent/ResourcesScreen.dart';
+import 'package:autism_world/Parent/bookAppointment.dart';
+import 'package:autism_world/Parent/dailyProgress.dart';
+import 'package:autism_world/Parent/SpecialistListPage.dart';
+import 'package:autism_world/screens/events.dart';
+import 'package:autism_world/l10n/app_localizations.dart';
 
 class ParentPage extends StatefulWidget {
   const ParentPage({super.key});
@@ -14,16 +15,31 @@ class ParentPage extends StatefulWidget {
 }
 
 class _ParentPageState extends State<ParentPage> {
+  // Consistent app colors
+  static const Color primaryBlue = Color(0xFF1E88E5);
+  static const Color accentOrange = Color(0xFFFF9800);
+  static const Color accentPurple = Color(0xFF9C27B0);
+  static const Color accentTeal = Color(0xFF00897B);
+  static const Color backgroundLight = Color(0xFFF5F7FA);
+
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: backgroundLight,
       appBar: AppBar(
-        title: const Text("Autism World"),
+        title: Text(
+          l10n.appTitle,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
+        backgroundColor: Colors.white,
+        elevation: 0,
+        foregroundColor: Colors.black87,
         actions: [
           IconButton(
             onPressed: () {},
-            icon: const Icon(Icons.notifications_none),
+            icon: const Icon(Icons.notifications_none, color: Colors.black54),
           ),
         ],
       ),
@@ -33,118 +49,110 @@ class _ParentPageState extends State<ParentPage> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                "Hello, Parent!",
-                style: TextStyle(fontSize: 26, fontWeight: FontWeight.bold),
-              ),
+              // --- GREETING ---
               Text(
-                "How is your child doing today?",
+                l10n.helloParent,
+                style: const TextStyle(
+                  fontSize: 28,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 5),
+              Text(
+                l10n.dailySummary,
                 style: TextStyle(fontSize: 16, color: Colors.grey[600]),
               ),
               const SizedBox(height: 25),
 
+              // --- UP NEXT APPOINTMENT ---
+              Text(
+                l10n.upNext,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 10),
+              _buildUpcomingCard(l10n),
+              const SizedBox(height: 25),
+
+              // --- PROMINENT CHILD PROFILE CTA ---
+              _buildChildProfileCTA(context, l10n),
+              const SizedBox(height: 30),
+
+              // --- QUICK ACTIONS GRID ---
+              Text(
+                l10n.quickActions,
+                style: const TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 15),
               GridView.count(
-                shrinkWrap: false,
+                shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                crossAxisCount: 2, // 2 columns
+                crossAxisCount: 2,
                 crossAxisSpacing: 15,
                 mainAxisSpacing: 15,
+                childAspectRatio: 1.1,
                 children: [
                   _buildMenuCard(
-                    context,
-                    "Child Profile",
-                    Icons.child_care,
-                    Colors.indigo,
-                    () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const Childpage(),
-                        ),
-                      );
-                    },
+                    l10n.menuBookAppointment,
+                    Icons.calendar_month_rounded,
+                    primaryBlue,
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const BookAppointment(),
+                      ),
+                    ),
                   ),
                   _buildMenuCard(
-                    context,
-                    "Book Appointment",
-                    Icons.calendar_month,
-                    Colors.blue,
-                    () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const bookAppointment(),
-                        ),
-                      );
-                    },
+                    l10n.menuSpecialists,
+                    Icons.medical_services_rounded,
+                    accentTeal,
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => SpecialistListPage(),
+                      ),
+                    ),
                   ),
                   _buildMenuCard(
-                    context,
-                    "Specialists",
-                    Icons.medical_services,
-                    Colors.teal,
-                    () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const SpecialistsPage(),
-                        ),
-                      );
-                    },
+                    l10n.menuDailyProgress,
+                    Icons.bar_chart_rounded,
+                    accentOrange,
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const DailyProgress(),
+                      ),
+                    ),
                   ),
                   _buildMenuCard(
-                    context,
-                    "Daily Progress",
-                    Icons.auto_graph,
-                    Colors.orange,
-                    () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const DailyProgress(),
-                        ),
-                      );
-                    },
+                    l10n.menuResources,
+                    Icons.menu_book_rounded,
+                    accentPurple,
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => ResourcesScreen(),
+                      ),
+                    ),
                   ),
                   _buildMenuCard(
-                    context,
-                    "Resources",
-                    Icons.library_books,
-                    Colors.purple,
-                    () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => ResourcesScreen(),
-                        ),
-                      );
-                    },
-                  ),
-                  _buildMenuCard(
-                    context,
-                    "Community Events",
-
-                    Icons.celebration, // A fun icon for events
-
-                    Colors.teal,
-                    () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(builder: (context) => EventsScreen()),
-                      );
-                    },
+                    l10n.menuCommunityEvents,
+                    Icons.diversity_3_rounded,
+                    const Color(0xFFE91E63),
+                    () => Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => EventsScreen()),
+                    ),
                   ),
                 ],
               ),
-
-              const SizedBox(height: 30),
-
-              const Text(
-                "Next Appointment",
-                style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-              ),
-              const SizedBox(height: 10),
-              _buildUpcomingCard(),
+              const SizedBox(height: 40),
             ],
           ),
         ),
@@ -152,8 +160,83 @@ class _ParentPageState extends State<ParentPage> {
     );
   }
 
+  // --- HIGHLIGHTED CHILD PROFILE WIDGET ---
+  Widget _buildChildProfileCTA(BuildContext context, AppLocalizations l10n) {
+    return InkWell(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const ChildPage()),
+      ),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: const Color.fromARGB(255, 4, 91, 161), // Distinct dark blue
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: const Color.fromARGB(255, 4, 91, 161).withOpacity(0.4),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(15),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.15),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.child_care,
+                color: Colors.white,
+                size: 32,
+              ),
+            ),
+            const SizedBox(width: 15),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    l10n.childProfileTitle,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 18,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    l10n.childProfileSubtitle,
+                    style: const TextStyle(color: Colors.white70, fontSize: 14),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.arrow_forward_ios,
+                color: Color.fromARGB(255, 4, 91, 161),
+                size: 16,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  // --- REGULAR MENU CARD WIDGET ---
   Widget _buildMenuCard(
-    BuildContext context,
     String title,
     IconData icon,
     Color color,
@@ -161,14 +244,15 @@ class _ParentPageState extends State<ParentPage> {
   ) {
     return InkWell(
       onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
       child: Container(
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.05),
-              blurRadius: 10,
+              color: Colors.grey.withOpacity(0.08),
+              blurRadius: 15,
               offset: const Offset(0, 5),
             ),
           ],
@@ -176,35 +260,81 @@ class _ParentPageState extends State<ParentPage> {
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircleAvatar(
-              backgroundColor: color.withOpacity(0.1),
-              child: Icon(icon, color: color),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(icon, color: color, size: 28),
             ),
-            const SizedBox(height: 10),
-            Text(title, style: const TextStyle(fontWeight: FontWeight.w600)),
+            const SizedBox(height: 12),
+            Text(
+              title,
+              textAlign: TextAlign.center,
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+            ),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildUpcomingCard() {
+  Widget _buildUpcomingCard(AppLocalizations l10n) {
     return Container(
-      padding: const EdgeInsets.all(15),
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: Colors.blue[800],
-        borderRadius: BorderRadius.circular(15),
+        color: const Color.fromARGB(102, 0, 137, 123),
+        borderRadius: BorderRadius.circular(20),
       ),
-      child: const ListTile(
-        leading: Icon(Icons.access_time, color: Colors.white),
-        title: Text(
-          "Speech Therapy",
-          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-        ),
-        subtitle: Text(
-          "Today at 4:00 PM",
-          style: TextStyle(color: Colors.white70),
-        ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  l10n.timeHour,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                Text(
+                  l10n.timePeriod,
+                  style: const TextStyle(color: Colors.white70, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 15),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l10n.upcomingTherapy,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 18,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  l10n.upcomingDoctor,
+                  style: const TextStyle(color: Colors.white70, fontSize: 14),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
