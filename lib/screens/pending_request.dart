@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:autism_world/l10n/app_localizations.dart';
 
 class PendingRequestsPage extends StatefulWidget {
   const PendingRequestsPage({super.key});
@@ -29,19 +30,17 @@ class _PendingRequestsPageState extends State<PendingRequestsPage> {
     },
   ];
 
-  void _handleRequest(int index, bool isAccepted) {
+  void _handleRequest(int index, bool isAccepted, AppLocalizations l10n) {
     String patientName = _pendingAppointments[index]['name']!;
-
     setState(() {
       _pendingAppointments.removeAt(index);
     });
-
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
           isAccepted
-              ? "Accepted request from $patientName"
-              : "Declined request from $patientName",
+              ? l10n.acceptedRequest(patientName)
+              : l10n.declinedRequest(patientName),
         ),
         backgroundColor: isAccepted ? Colors.green : Colors.red,
         duration: const Duration(seconds: 2),
@@ -51,31 +50,38 @@ class _PendingRequestsPageState extends State<PendingRequestsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text(
-          "Pending Requests",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+        title: Text(
+          l10n.pendingRequestsTitle,
+          style: const TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         backgroundColor: Colors.white,
       ),
       body: _pendingAppointments.isEmpty
-          ? _buildEmptyState()
+          ? _buildEmptyState(l10n)
           : ListView.builder(
               padding: const EdgeInsets.all(20),
               itemCount: _pendingAppointments.length,
               itemBuilder: (context, index) {
                 final request = _pendingAppointments[index];
-                return _buildRequestCard(request, index);
+                return _buildRequestCard(request, index, l10n);
               },
             ),
     );
   }
 
-  Widget _buildRequestCard(Map<String, String> request, int index) {
+  Widget _buildRequestCard(
+    Map<String, String> request,
+    int index,
+    AppLocalizations l10n,
+  ) {
     String initial = request['name']![0];
-
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
@@ -119,7 +125,6 @@ class _PendingRequestsPageState extends State<PendingRequestsPage> {
                   ],
                 ),
               ),
-
               Container(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 10,
@@ -148,35 +153,31 @@ class _PendingRequestsPageState extends State<PendingRequestsPage> {
               ),
             ],
           ),
-
           const SizedBox(height: 20),
-
           Row(
             children: [
               Expanded(
                 child: OutlinedButton(
-                  onPressed: () => _handleRequest(index, false),
+                  onPressed: () => _handleRequest(index, false, l10n),
                   style: OutlinedButton.styleFrom(
                     foregroundColor: Colors.red,
                     side: const BorderSide(color: Colors.redAccent),
                     padding: const EdgeInsets.symmetric(vertical: 12),
                   ),
-                  child: const Text("Decline"),
+                  child: Text(l10n.decline),
                 ),
               ),
-
               const SizedBox(width: 12),
-
               Expanded(
                 child: ElevatedButton(
-                  onPressed: () => _handleRequest(index, true),
+                  onPressed: () => _handleRequest(index, true, l10n),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.blue,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     elevation: 0,
                   ),
-                  child: const Text("Approve"),
+                  child: Text(l10n.approve),
                 ),
               ),
             ],
@@ -186,7 +187,7 @@ class _PendingRequestsPageState extends State<PendingRequestsPage> {
     );
   }
 
-  Widget _buildEmptyState() {
+  Widget _buildEmptyState(AppLocalizations l10n) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -194,7 +195,7 @@ class _PendingRequestsPageState extends State<PendingRequestsPage> {
           Icon(Icons.check_circle_outline, size: 80, color: Colors.grey[300]),
           const SizedBox(height: 20),
           Text(
-            "All Caught Up!",
+            l10n.allCaughtUp,
             style: TextStyle(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -203,7 +204,7 @@ class _PendingRequestsPageState extends State<PendingRequestsPage> {
           ),
           const SizedBox(height: 10),
           Text(
-            "You have no pending appointments requests.",
+            l10n.noPendingAppointments,
             style: TextStyle(color: Colors.grey[500]),
           ),
         ],
