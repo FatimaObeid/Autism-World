@@ -1,8 +1,10 @@
+import 'package:autism_world/Parent/ParentPage.dart';
 import 'package:autism_world/screens/login.dart';
-import 'package:autism_world/screens/parent.dart';
-import 'package:autism_world/screens/specialist.dart';
+import 'package:autism_world/specialist/specialist.dart';
 import 'package:autism_world/screens/volunteer.dart';
 import 'package:flutter/material.dart';
+
+import 'package:autism_world/l10n/app_localizations.dart';
 
 class Register extends StatefulWidget {
   const Register({super.key});
@@ -39,11 +41,15 @@ class _RegisterState extends State<Register> {
     addressController.dispose();
     specializationController.dispose();
     licenseController.dispose();
+    typeController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    // 1. Initialize your localizations here
+    final l10n = AppLocalizations.of(context)!;
+
     return Scaffold(
       body: SingleChildScrollView(
         child: Container(
@@ -68,13 +74,16 @@ class _RegisterState extends State<Register> {
                   ),
                 ),
                 Text(
-                  'Join Our Community',
-                  style: TextStyle(fontSize: 25, fontWeight: FontWeight.bold),
+                  l10n.joinCommunity,
+                  style: const TextStyle(
+                    fontSize: 25,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 10),
 
                 Text(
-                  'Create your account to get started',
+                  l10n.createAccountDesc,
                   textAlign: TextAlign.center,
                   style: TextStyle(fontSize: 16, color: Colors.grey[600]),
                 ),
@@ -84,14 +93,14 @@ class _RegisterState extends State<Register> {
                 TextFormField(
                   controller: nameController,
                   decoration: InputDecoration(
-                    labelText: "Full Name",
-                    hintText: 'Enter Your Full Name',
+                    labelText: l10n.fullName,
+                    hintText: l10n.hintFullName,
                     hintStyle: const TextStyle(
                       letterSpacing: 2,
                       color: Colors.grey,
                     ),
                     prefixIcon: const Icon(
-                      Icons.lock_outline,
+                      Icons.person_outline,
                       color: Colors.grey,
                     ),
                     border: OutlineInputBorder(
@@ -104,7 +113,7 @@ class _RegisterState extends State<Register> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your name';
+                      return l10n.pleaseEnterName;
                     }
                     return null;
                   },
@@ -115,8 +124,8 @@ class _RegisterState extends State<Register> {
                 TextFormField(
                   controller: emailController,
                   decoration: InputDecoration(
-                    hintText: "john@gmail.com",
-                    labelText: "Email",
+                    hintText: l10n.hintEmail,
+                    labelText: l10n.email,
                     hintStyle: TextStyle(color: Colors.grey[400]),
                     prefixIcon: const Icon(
                       Icons.email_outlined,
@@ -132,10 +141,10 @@ class _RegisterState extends State<Register> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter your email';
+                      return l10n.pleaseEnterEmail;
                     }
                     if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
-                      return 'Please enter a valid email address';
+                      return l10n.validEmail;
                     }
                     return null;
                   },
@@ -147,8 +156,8 @@ class _RegisterState extends State<Register> {
                   controller: passwordController,
                   obscureText: _isPasswordHidden,
                   decoration: InputDecoration(
-                    hintText: "Enter a password",
-                    labelText: "Password",
+                    hintText: l10n.hintPassword,
+                    labelText: l10n.password,
                     hintStyle: const TextStyle(
                       letterSpacing: 2,
                       color: Colors.grey,
@@ -180,20 +189,20 @@ class _RegisterState extends State<Register> {
 
                   validator: (value) {
                     if (value == null || value.length < 6) {
-                      return 'Password must be at least 6 characters long';
+                      return l10n.passwordMinLength;
                     }
                     return null;
                   },
                 ),
 
                 if (selectedRole == 'Parent') ...[
-                  SizedBox(height: 30),
+                  const SizedBox(height: 30),
                   TextFormField(
                     controller: dateOfBirthController,
                     readOnly: true,
                     decoration: InputDecoration(
-                      labelText: "Date of Birth",
-                      hintText: 'Enter your date of birth',
+                      labelText: l10n.dateOfBirth,
+                      hintText: l10n.hintDob,
                       hintStyle: const TextStyle(
                         letterSpacing: 2,
                         color: Colors.grey,
@@ -229,7 +238,7 @@ class _RegisterState extends State<Register> {
                     validator: (value) {
                       if (selectedRole == 'Parent' &&
                           (value == null || value.isEmpty)) {
-                        return 'This field is required';
+                        return l10n.thisFieldRequired;
                       }
                       return null;
                     },
@@ -240,8 +249,8 @@ class _RegisterState extends State<Register> {
                   TextFormField(
                     controller: phoneController,
                     decoration: InputDecoration(
-                      labelText: "Phone Number",
-                      hintText: 'Enter your phone number',
+                      labelText: l10n.phoneNumber,
+                      hintText: l10n.hintPhone,
                       hintStyle: const TextStyle(
                         letterSpacing: 2,
                         color: Colors.grey,
@@ -261,7 +270,7 @@ class _RegisterState extends State<Register> {
                     validator: (value) {
                       if (selectedRole == 'Parent' &&
                           (value == null || value.isEmpty)) {
-                        return 'This field is required';
+                        return l10n.thisFieldRequired;
                       }
                       return null;
                     },
@@ -270,8 +279,8 @@ class _RegisterState extends State<Register> {
                   TextFormField(
                     controller: addressController,
                     decoration: InputDecoration(
-                      labelText: "Address",
-                      hintText: 'Enter your address',
+                      labelText: l10n.address,
+                      hintText: l10n.hintAddress,
                       hintStyle: const TextStyle(
                         letterSpacing: 2,
                         color: Colors.grey,
@@ -291,7 +300,7 @@ class _RegisterState extends State<Register> {
                     validator: (value) {
                       if (selectedRole == 'Parent' &&
                           (value == null || value.isEmpty)) {
-                        return 'This field is required';
+                        return l10n.thisFieldRequired;
                       }
                       return null;
                     },
@@ -299,12 +308,12 @@ class _RegisterState extends State<Register> {
                 ],
 
                 if (selectedRole == 'Specialist') ...[
-                  SizedBox(height: 30),
+                  const SizedBox(height: 30),
                   TextFormField(
                     controller: specializationController,
                     decoration: InputDecoration(
-                      labelText: 'Specialization',
-                      hintText: 'Enter Your Specialization',
+                      labelText: l10n.specialization,
+                      hintText: l10n.hintSpecialization,
                       hintStyle: const TextStyle(
                         letterSpacing: 2,
                         color: Colors.grey,
@@ -324,7 +333,7 @@ class _RegisterState extends State<Register> {
                     validator: (value) {
                       if (selectedRole == 'Specialist' &&
                           (value == null || value.isEmpty)) {
-                        return 'This field is required';
+                        return l10n.thisFieldRequired;
                       }
                       return null;
                     },
@@ -335,8 +344,8 @@ class _RegisterState extends State<Register> {
                   TextFormField(
                     controller: licenseController,
                     decoration: InputDecoration(
-                      labelText: 'License Number',
-                      hintText: 'Enter Your License Number',
+                      labelText: l10n.licenseNumber,
+                      hintText: l10n.hintLicense,
                       hintStyle: const TextStyle(
                         letterSpacing: 2,
                         color: Colors.grey,
@@ -356,7 +365,7 @@ class _RegisterState extends State<Register> {
                     validator: (value) {
                       if (selectedRole == 'Specialist' &&
                           (value == null || value.isEmpty)) {
-                        return 'This field is required';
+                        return l10n.thisFieldRequired;
                       }
                       return null;
                     },
@@ -364,13 +373,13 @@ class _RegisterState extends State<Register> {
                 ],
 
                 if (selectedRole == 'Volunteer') ...[
-                  SizedBox(height: 30),
+                  const SizedBox(height: 30),
                   TextFormField(
                     controller: phoneController,
-                    readOnly: true,
+
                     decoration: InputDecoration(
-                      labelText: "Phone Number",
-                      hintText: 'Enter your phone number',
+                      labelText: l10n.phoneNumber,
+                      hintText: l10n.hintPhone,
                       hintStyle: const TextStyle(
                         letterSpacing: 2,
                         color: Colors.grey,
@@ -389,13 +398,13 @@ class _RegisterState extends State<Register> {
                     ),
                   ),
 
-                  SizedBox(height: 30),
+                  const SizedBox(height: 30),
 
                   TextFormField(
                     controller: typeController,
                     decoration: InputDecoration(
-                      labelText: "Volunteer Type",
-                      hintText: 'Enter your volunteer type',
+                      labelText: l10n.volunteerType,
+                      hintText: l10n.hintVolunteerType,
                       hintStyle: const TextStyle(
                         letterSpacing: 2,
                         color: Colors.grey,
@@ -413,9 +422,9 @@ class _RegisterState extends State<Register> {
                       ),
                     ),
                     validator: (value) {
-                      if (selectedRole == 'Parent' &&
+                      if (selectedRole == 'Volunteer' &&
                           (value == null || value.isEmpty)) {
-                        return 'This field is required';
+                        return l10n.thisFieldRequired;
                       }
                       return null;
                     },
@@ -424,16 +433,16 @@ class _RegisterState extends State<Register> {
                 const SizedBox(height: 30),
                 DropdownButtonFormField<String>(
                   value: selectedRole,
-                  hint: const Text('Select your role'),
-                  items: const [
-                    DropdownMenuItem(value: 'Parent', child: Text('Parent')),
+                  hint: Text(l10n.selectRole),
+                  items: [
+                    DropdownMenuItem(value: 'Parent', child: Text(l10n.parent)),
                     DropdownMenuItem(
                       value: 'Specialist',
-                      child: Text('Specialist'),
+                      child: Text(l10n.specialist),
                     ),
                     DropdownMenuItem(
                       value: 'Volunteer',
-                      child: Text('Volunteer'),
+                      child: Text(l10n.volunteer),
                     ),
                   ],
                   onChanged: (value) {
@@ -443,12 +452,12 @@ class _RegisterState extends State<Register> {
                   },
                   validator: (value) {
                     if (value == null) {
-                      return 'Please select a role';
+                      return l10n.pleaseSelectRole;
                     }
                     return null;
                   },
                   decoration: InputDecoration(
-                    labelText: 'I am a...',
+                    labelText: l10n.iAmA,
                     border: const OutlineInputBorder(
                       borderRadius: BorderRadius.all(Radius.circular(10)),
                       borderSide: BorderSide(color: Colors.grey),
@@ -481,10 +490,8 @@ class _RegisterState extends State<Register> {
                       }
                       if (selectedRole == 'Parent') {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              "Parent account created successfully!",
-                            ),
+                          SnackBar(
+                            content: Text(l10n.parentAccountCreated),
                             backgroundColor: Colors.green,
                           ),
                         );
@@ -496,10 +503,8 @@ class _RegisterState extends State<Register> {
                         );
                       } else if (selectedRole == 'Specialist') {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              "Specialist account created successfully!",
-                            ),
+                          SnackBar(
+                            content: Text(l10n.specialistAccountCreated),
                             backgroundColor: Colors.green,
                           ),
                         );
@@ -511,31 +516,31 @@ class _RegisterState extends State<Register> {
                         );
                       } else {
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(
-                            content: Text(
-                              "Volunteer account created successfully!",
-                            ),
+                          SnackBar(
+                            content: Text(l10n.volunteerAccountCreated),
                             backgroundColor: Colors.green,
                           ),
                         );
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (context) => const VolunteerPage(),
+                            builder: (context) => const VolunteerDashboard(
+                              volunteerName: 'john doe', // Mock data
+                            ),
                           ),
                         );
                       }
                     },
-                    child: Text('Create Account'),
+                    child: Text(l10n.createAccount),
                   ),
                 ),
-                SizedBox(height: 20),
+                const SizedBox(height: 20),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Already have an account?',
-                      style: TextStyle(color: Colors.grey),
+                      l10n.alreadyHaveAccount,
+                      style: const TextStyle(color: Colors.grey),
                     ),
                     TextButton(
                       onPressed: () {
@@ -547,8 +552,8 @@ class _RegisterState extends State<Register> {
                         );
                       },
                       child: Text(
-                        'Login',
-                        style: TextStyle(
+                        l10n.login,
+                        style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           color: Colors.blue,
                         ),
