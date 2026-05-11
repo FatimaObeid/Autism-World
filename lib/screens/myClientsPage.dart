@@ -1,5 +1,6 @@
-import 'package:autism_world/screens/clients_details.dart';
+import 'package:autism_world/specialist/clients_details.dart';
 import 'package:flutter/material.dart';
+import 'package:autism_world/l10n/app_localizations.dart';
 
 class MyClientsPage extends StatefulWidget {
   const MyClientsPage({super.key});
@@ -42,13 +43,17 @@ class _MyClientsPageState extends State<MyClientsPage> {
 
   @override
   Widget build(BuildContext context) {
+    final l10n = AppLocalizations.of(context)!;
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
         backgroundColor: Colors.white,
-        title: const Text(
-          "My Clients",
-          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+        title: Text(
+          l10n.myClientsTitle,
+          style: const TextStyle(
+            color: Colors.black,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
       body: ListView.builder(
@@ -81,7 +86,7 @@ class _MyClientsPageState extends State<MyClientsPage> {
                         ),
                         const SizedBox(height: 4),
                         Text(
-                          "Age: ${client['age']} \nParent: ${client['parentName']}",
+                          "Age: ${client['age']}\n${l10n.parentPrefix(client['parentName']!)}",
                           style: TextStyle(
                             color: Colors.grey[600],
                             fontSize: 13,
@@ -91,9 +96,7 @@ class _MyClientsPageState extends State<MyClientsPage> {
                     ),
                   ],
                 ),
-
                 const Divider(height: 25, color: Colors.grey),
-
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -103,9 +106,9 @@ class _MyClientsPageState extends State<MyClientsPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            "Last Session:",
-                            style: TextStyle(
+                          Text(
+                            l10n.lastSessionLabel,
+                            style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
                             ),
@@ -124,9 +127,7 @@ class _MyClientsPageState extends State<MyClientsPage> {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 12),
-
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -140,9 +141,9 @@ class _MyClientsPageState extends State<MyClientsPage> {
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text(
-                            "Next Plan:",
-                            style: TextStyle(
+                          Text(
+                            l10n.nextPlanLabel,
+                            style: const TextStyle(
                               fontWeight: FontWeight.bold,
                               fontSize: 13,
                             ),
@@ -161,9 +162,7 @@ class _MyClientsPageState extends State<MyClientsPage> {
                     ),
                   ],
                 ),
-
                 const SizedBox(height: 20),
-
                 SizedBox(
                   width: double.infinity,
                   child: OutlinedButton(
@@ -176,7 +175,6 @@ class _MyClientsPageState extends State<MyClientsPage> {
                         ),
                       );
                     },
-
                     style: OutlinedButton.styleFrom(
                       padding: const EdgeInsets.symmetric(vertical: 12),
                       side: BorderSide(color: Colors.grey.shade300),
@@ -184,9 +182,9 @@ class _MyClientsPageState extends State<MyClientsPage> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                     ),
-                    child: const Text(
-                      "View Details",
-                      style: TextStyle(color: Colors.black),
+                    child: Text(
+                      l10n.viewDetails,
+                      style: const TextStyle(color: Colors.black),
                     ),
                   ),
                 ),
