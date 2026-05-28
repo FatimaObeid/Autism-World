@@ -5,62 +5,9 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
-import 'app_localizations_ar.dart';
+import "app_localizations_ar.dart";
 import 'app_localizations_en.dart';
 
-// ignore_for_file: type=lint
-
-/// Callers can lookup localized strings with an instance of AppLocalizations
-/// returned by `AppLocalizations.of(context)`.
-///
-/// Applications need to include `AppLocalizations.delegate()` in their app's
-/// `localizationDelegates` list, and the locales they support in the app's
-/// `supportedLocales` list. For example:
-///
-/// ```dart
-/// import 'l10n/app_localizations.dart';
-///
-/// return MaterialApp(
-///   localizationsDelegates: AppLocalizations.localizationsDelegates,
-///   supportedLocales: AppLocalizations.supportedLocales,
-///   home: MyApplicationHome(),
-/// );
-/// ```
-///
-/// ## Update pubspec.yaml
-///
-/// Please make sure to update your pubspec.yaml to include the following
-/// packages:
-///
-/// ```yaml
-/// dependencies:
-///   # Internationalization support.
-///   flutter_localizations:
-///     sdk: flutter
-///   intl: any # Use the pinned version from flutter_localizations
-///
-///   # Rest of dependencies
-/// ```
-///
-/// ## iOS Applications
-///
-/// iOS applications define key application metadata, including supported
-/// locales, in an Info.plist file that is built into the application bundle.
-/// To configure the locales supported by your app, you’ll need to edit this
-/// file.
-///
-/// First, open your project’s ios/Runner.xcworkspace Xcode workspace file.
-/// Then, in the Project Navigator, open the Info.plist file under the Runner
-/// project’s Runner folder.
-///
-/// Next, select the Information Property List item, select Add Item from the
-/// Editor menu, then select Localizations from the pop-up menu.
-///
-/// Select and expand the newly-created Localizations item then, for each
-/// locale your application supports, add a new item and select the locale
-/// you wish to add from the pop-up menu in the Value field. This list should
-/// be consistent with the languages listed in the AppLocalizations.supportedLocales
-/// property.
 abstract class AppLocalizations {
   AppLocalizations(String locale)
     : localeName = intl.Intl.canonicalizedLocale(locale.toString());
@@ -103,6 +50,26 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Autism World'**
   String get appTitle;
+
+  String get settings => 'Settings';
+  String get account => 'Account';
+  String get appSettings => 'App Settings';
+  String get darkMode => 'Dark Mode';
+  String get language => 'Language';
+  String get logout => 'Logout';
+  String get editProfile => 'Edit Profile';
+  String get changePassword => 'Change Password';
+  String get updatePassword => 'Update Password';
+  String get oldpassword => 'Old Password';
+  String get newpassword => 'New Password';
+  String get confirmPassword => 'Confirm Password';
+  String get saveChanges => 'Save Changes';
+
+  /// Professional Development title
+  String get professionalDevelopment;
+
+  /// Psychology & Autism Support subtitle
+  String get psychologyAutismSupport;
 
   /// No description provided for @welcomeBack.
   ///
@@ -1147,6 +1114,18 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Follow-up'**
   String get tagFollowup;
+
+  String get psychologySupport => 'Psychology Support';
+
+  String? get allEvents => 'All Events';
+
+  String? get mySchedule => 'My Schedule';
+
+  String get noEventsRegistered => 'No events registered';
+
+  String get eventReserved => 'Event reserved! 📅';
+
+  String get eventCancelled => 'Event cancelled! 🚫';
 }
 
 class _AppLocalizationsDelegate
@@ -1182,3 +1161,4 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
     'that was used.',
   );
 }
+
