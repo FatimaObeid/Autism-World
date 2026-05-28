@@ -36,6 +36,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dontHaveAccount => 'Don\'t have an account?';
 
   @override
+  String get professionalDevelopment => 'Professional Development';
+
+  @override
+  String get psychologyAutismSupport => 'Psychology & Autism Support';
+
+  @override
   String get registerHere => 'Register here';
 
   @override
@@ -552,7 +558,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tagConsultation => 'Consultation';
-
-  @override
-  String get tagFollowup => 'Follow-up';
+  
+}Followup => 'Follow-up';
 }
