@@ -1,3 +1,4 @@
+
 // ignore: unused_import
 import 'package:intl/intl.dart' as intl;
 import 'app_localizations.dart';
@@ -10,36 +11,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get appTitle => 'عالم التوحد';
-
-  @override
-  String get settings => 'الإعدادات';
-
-  @override
-  String get account => 'الحساب';
-
-  @override
-  String get appSettings => 'إعدادات التطبيق';
-
-  @override
-  String get darkMode => 'الوضع الليلي';
-
-  @override
-  String get changePassword => 'تغيير كلمة المرور';
-
-  @override
-  String get editProfile => 'تعديل الملف الشخصي';
-
-  @override
-  String get language => 'اللغة';
-
-  @override
-  String get saveChanges => 'حفظ التغييرات';
-
-  @override
-  String get support => 'الدعم';
-
-  @override
-  String get logout => 'تسجيل الخروج';
 
   @override
   String get welcomeBack => 'مرحباً بعودتك!';
@@ -80,72 +51,6 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get hintFullName => 'أدخل اسمك الكامل';
-
-  @override
-  String get professionalDevelopment => 'التطوير المهني';
-
-  @override
-  String get psychologyAutismSupport => 'علم النفس ودعم التوحد';
-
-  @override
-  String get allEvents => 'جميع الفعاليات';
-
-  @override
-  String get mySchedule => 'جدولي';
-
-  @override
-  String get noEventsRegistered => 'لا توجد فعاليات مسجلة بعد.';
-
-  @override
-  String get seatReserved => 'تم حجز المقعد! 📅';
-
-  @override
-  String get reservationCancelled => 'تم إلغاء الحجز.';
-
-  @override
-  String get registered => 'مسجل ✓';
-
-  @override
-  String get reserveSpot => 'احجز مكان';
-
-  @override
-  String get pendingRequests => 'الطلبات المعلقة';
-
-  @override
-  String get decline => 'رفض';
-
-  @override
-  String get approve => 'قبول';
-
-  @override
-  String get allCaughtUp => 'كل شيء منتهٍ!';
-
-  @override
-  String get noPendingRequests => 'ليس لديك طلبات مواعيد معلقة.';
-
-  @override
-  String acceptedRequest(String name) {
-    return 'تم قبول طلب $name';
-  }
-
-  @override
-  String declinedRequest(String name) {
-    return 'تم رفض طلب $name';
-  }
-
-  @override
-  String get pending => 'قيد الانتظار';
-
-  @override
-  String get approved => 'مقبول';
-  @override
-  String get aboutApp => 'حول التطبيق';
-
-  @override
-  String get helpCenter => 'مركز المساعدة';
-
-  @override
-  String get privacyPolicy => 'سياسة الخصوصية';
 
   @override
   String get pleaseEnterEmail => 'الرجاء إدخال البريد الإلكتروني';
@@ -238,6 +143,21 @@ class AppLocalizationsAr extends AppLocalizations {
   String get thisFieldRequired => 'هذا الحقل مطلوب';
 
   @override
+  String get editProfile => 'تعديل الملف الشخصي';
+
+  @override
+  String get changePassword => 'تغيير كلمة المرور';
+
+  @override
+  String get darkMode => 'الوضع المظلم';
+
+  @override
+  String get language => 'اللغة';
+
+  @override
+  String get logout => 'تسجيل الخروج';
+
+  @override
   String hello(String name) {
     return 'مرحباً، $name';
   }
@@ -247,6 +167,12 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get total => 'الإجمالي';
+
+  @override
+  String get approved => 'موافق عليه';
+
+  @override
+  String get pending => 'قيد الانتظار';
 
   @override
   String get approvedTab => 'موافق عليه ✅';
@@ -521,6 +447,18 @@ class AppLocalizationsAr extends AppLocalizations {
   String get communityEventsSpecialistTitle => 'فعاليات مجتمعية للاختصاصيين';
 
   @override
+  String get seatReserved => 'تم حجز المقعد! 📅';
+
+  @override
+  String get reservationCancelled => 'تم إلغاء الحجز.';
+
+  @override
+  String get registered => 'مسجل ✓';
+
+  @override
+  String get reserveSpot => 'احجز مقعداً';
+
+  @override
   String get categoryTraining => 'تدريب';
 
   @override
@@ -550,7 +488,26 @@ class AppLocalizationsAr extends AppLocalizations {
   String get pendingRequestsTitle => 'الطلبات المعلقة';
 
   @override
+  String get decline => 'رفض';
+
+  @override
+  String get approve => 'موافقة';
+
+  @override
+  String get allCaughtUp => 'كل شيء منتهٍ!';
+
+  @override
   String get noPendingAppointments => 'ليس لديك طلبات مواعيد معلقة.';
+
+  @override
+  String acceptedRequest(String name) {
+    return 'تم قبول الطلب من $name';
+  }
+
+  @override
+  String declinedRequest(String name) {
+    return 'تم رفض الطلب من $name';
+  }
 
   @override
   String welcomeSpecialist(String name) {
@@ -611,5 +568,30 @@ class AppLocalizationsAr extends AppLocalizations {
 
   @override
   String get tagFollowup => 'متابعة';
-}
 
+  @override
+  String get loginFailed => 'تسجيل الدخول قد فشل';
+
+  @override
+  String welcomeVolunteer(String name) {
+    return 'مرحباً $name!';
+  }
+
+  @override
+  String get volunteerDashboardSubtitle => 'إدارة ورش العمل والأنشطة الخاصة بك';
+
+  @override
+  String get totalWorkshops => 'الإجمالي';
+
+  @override
+  String get myWorkshops => 'ورش العمل الخاصة بي';
+
+  @override
+  String get noApprovedWorkshops => 'لا توجد ورش عمل معتمدة حتى الآن';
+
+  @override
+  String get noPendingWorkshops => 'لا توجد ورش عمل معلقة';
+
+  @override
+  String get workshopAdded => 'تمت إضافة ورشة العمل بنجاح!';
+}
