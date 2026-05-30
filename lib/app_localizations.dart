@@ -5,9 +5,62 @@ import 'package:flutter/widgets.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:intl/intl.dart' as intl;
 
-import "app_localizations_ar.dart";
+import 'app_localizations_ar.dart';
 import 'app_localizations_en.dart';
 
+// ignore_for_file: type=lint
+
+/// Callers can lookup localized strings with an instance of AppLocalizations
+/// returned by `AppLocalizations.of(context)`.
+///
+/// Applications need to include `AppLocalizations.delegate()` in their app's
+/// `localizationDelegates` list, and the locales they support in the app's
+/// `supportedLocales` list. For example:
+///
+/// ```dart
+/// import 'l10n/app_localizations.dart';
+///
+/// return MaterialApp(
+///   localizationsDelegates: AppLocalizations.localizationsDelegates,
+///   supportedLocales: AppLocalizations.supportedLocales,
+///   home: MyApplicationHome(),
+/// );
+/// ```
+///
+/// ## Update pubspec.yaml
+///
+/// Please make sure to update your pubspec.yaml to include the following
+/// packages:
+///
+/// ```yaml
+/// dependencies:
+///   # Internationalization support.
+///   flutter_localizations:
+///     sdk: flutter
+///   intl: any # Use the pinned version from flutter_localizations
+///
+///   # Rest of dependencies
+/// ```
+///
+/// ## iOS Applications
+///
+/// iOS applications define key application metadata, including supported
+/// locales, in an Info.plist file that is built into the application bundle.
+/// To configure the locales supported by your app, you’ll need to edit this
+/// file.
+///
+/// First, open your project’s ios/Runner.xcworkspace Xcode workspace file.
+/// Then, in the Project Navigator, open the Info.plist file under the Runner
+/// project’s Runner folder.
+///
+/// Next, select the Information Property List item, select Add Item from the
+/// Editor menu, then select Localizations from the pop-up menu.
+///
+/// Select and expand the newly-created Localizations item then, for each
+/// locale your application supports, add a new item and select the locale
+/// you wish to add from the pop-up menu in the Value field. This list should
+/// be consistent with the languages listed in the AppLocalizations.supportedLocales
+/// property.
 abstract class AppLocalizations {
   AppLocalizations(String locale)
     : localeName = intl.Intl.canonicalizedLocale(locale.toString());
@@ -50,26 +103,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Autism World'**
   String get appTitle;
-
-  String get settings => 'Settings';
-  String get account => 'Account';
-  String get appSettings => 'App Settings';
-  String get darkMode => 'Dark Mode';
-  String get language => 'Language';
-  String get logout => 'Logout';
-  String get editProfile => 'Edit Profile';
-  String get changePassword => 'Change Password';
-  String get updatePassword => 'Update Password';
-  String get oldpassword => 'Old Password';
-  String get newpassword => 'New Password';
-  String get confirmPassword => 'Confirm Password';
-  String get saveChanges => 'Save Changes';
-
-  /// Professional Development title
-  String get professionalDevelopment;
-
-  /// Psychology & Autism Support subtitle
-  String get psychologyAutismSupport;
 
   /// No description provided for @welcomeBack.
   ///
@@ -328,6 +361,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'This field is required'**
   String get thisFieldRequired;
+
+  /// No description provided for @editProfile.
+  ///
+  /// In en, this message translates to:
+  /// **'Edit Profile'**
+  String get editProfile;
+
+  /// No description provided for @changePassword.
+  ///
+  /// In en, this message translates to:
+  /// **'Change Password'**
+  String get changePassword;
+
+  /// No description provided for @darkMode.
+  ///
+  /// In en, this message translates to:
+  /// **'Dark Mode'**
+  String get darkMode;
+
+  /// No description provided for @language.
+  ///
+  /// In en, this message translates to:
+  /// **'Language'**
+  String get language;
+
+  /// No description provided for @logout.
+  ///
+  /// In en, this message translates to:
+  /// **'Logout'**
+  String get logout;
 
   /// Greeting with user name
   ///
@@ -1115,17 +1178,53 @@ abstract class AppLocalizations {
   /// **'Follow-up'**
   String get tagFollowup;
 
-  String get psychologySupport => 'Psychology Support';
+  /// No description provided for @loginFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Login failed. Please check your credentials.'**
+  String get loginFailed;
 
-  String? get allEvents => 'All Events';
+  /// Welcome message for volunteer
+  ///
+  /// In en, this message translates to:
+  /// **'Hello {name}!'**
+  String welcomeVolunteer(String name);
 
-  String? get mySchedule => 'My Schedule';
+  /// No description provided for @volunteerDashboardSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage your workshops and activities'**
+  String get volunteerDashboardSubtitle;
 
-  String get noEventsRegistered => 'No events registered';
+  /// No description provided for @totalWorkshops.
+  ///
+  /// In en, this message translates to:
+  /// **'Total'**
+  String get totalWorkshops;
 
-  String get eventReserved => 'Event reserved! 📅';
+  /// No description provided for @myWorkshops.
+  ///
+  /// In en, this message translates to:
+  /// **'My Workshops'**
+  String get myWorkshops;
 
-  String get eventCancelled => 'Event cancelled! 🚫';
+  /// No description provided for @noApprovedWorkshops.
+  ///
+  /// In en, this message translates to:
+  /// **'No approved workshops yet'**
+  String get noApprovedWorkshops;
+
+  /// No description provided for @noPendingWorkshops.
+  ///
+  /// In en, this message translates to:
+  /// **'No pending workshops'**
+  String get noPendingWorkshops;
+
+  /// No description provided for @workshopAdded.
+  ///
+  /// In en, this message translates to:
+  /// **'Workshop added successfully!'**
+  String get workshopAdded;
 }
 
 class _AppLocalizationsDelegate
@@ -1161,4 +1260,3 @@ AppLocalizations lookupAppLocalizations(Locale locale) {
     'that was used.',
   );
 }
-
