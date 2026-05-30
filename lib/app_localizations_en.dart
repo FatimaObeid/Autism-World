@@ -36,12 +36,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get dontHaveAccount => 'Don\'t have an account?';
 
   @override
-  String get professionalDevelopment => 'Professional Development';
-
-  @override
-  String get psychologyAutismSupport => 'Psychology & Autism Support';
-
-  @override
   String get registerHere => 'Register here';
 
   @override
@@ -146,6 +140,21 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get thisFieldRequired => 'This field is required';
+
+  @override
+  String get editProfile => 'Edit Profile';
+
+  @override
+  String get changePassword => 'Change Password';
+
+  @override
+  String get darkMode => 'Dark Mode';
+
+  @override
+  String get language => 'Language';
+
+  @override
+  String get logout => 'Logout';
 
   @override
   String hello(String name) {
@@ -558,6 +567,35 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get tagConsultation => 'Consultation';
-  
-}Followup => 'Follow-up';
+
+  @override
+  String get tagFollowup => 'Follow-up';
+
+  @override
+  String get loginFailed => 'Login failed. Please check your credentials.';
+
+  @override
+  String welcomeVolunteer(String name) {
+    return 'Hello $name!';
+  }
+
+  @override
+  String get volunteerDashboardSubtitle =>
+      'Manage your workshops and activities';
+
+  @override
+  String get totalWorkshops => 'Total';
+
+  @override
+  String get myWorkshops => 'My Workshops';
+
+  @override
+  String get noApprovedWorkshops => 'No approved workshops yet';
+
+  @override
+  String get noPendingWorkshops => 'No pending workshops';
+
+  @override
+  String get workshopAdded => 'Workshop added successfully!';
 }
+
