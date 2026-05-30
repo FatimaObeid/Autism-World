@@ -44,11 +44,21 @@
   "volunteerType": "Type of Volunteer Work",
   "hintVolunteerType": "e.g., Event helper, workshop leader",
   "thisFieldRequired": "This field is required",
+  
+
+  "editProfile": "Edit Profile",
+  "changePassword": "Change Password",
+  "darkMode": "Dark Mode",
+  "language": "Language",
+  "logout": "Logout",
+  
   "hello": "Hello, {name}",
   "@hello": {
     "description": "Greeting with user name",
     "placeholders": { "name": { "type": "String" } }
   },
+  
+
   "workshopOverview": "Here is your workshop overview",
   "total": "Total",
   "approved": "Approved",
@@ -126,7 +136,6 @@
   "upcomingDoctor": "Dr. Sarah Wilson",
   "timeHour": "4:00",
   "timePeriod": "PM",
-
   "clientDetailsTitle": "Client Details",
   "ageYearsOld": "Age: {age} years old",
   "@ageYearsOld": { "placeholders": { "age": { "type": "String" } } },
@@ -143,7 +152,6 @@
   "recentProgress": "Recent Progress",
   "importantNotes": "Important Notes",
   "addNote": "Add Note",
-
   "communityEventsSpecialistTitle": "Community Events for Specialists",
   "seatReserved": "Seat reserved! 📅",
   "reservationCancelled": "Reservation cancelled.",
@@ -152,14 +160,12 @@
   "categoryTraining": "Training",
   "categoryPeerReview": "Peer Review",
   "categoryConference": "Conference",
-
   "myClientsTitle": "My Clients",
   "lastSessionLabel": "Last Session:",
   "nextPlanLabel": "Next Plan:",
   "viewDetails": "View Details",
   "parentPrefix": "Parent: {parentName}",
   "@parentPrefix": { "placeholders": { "parentName": { "type": "String" } } },
-
   "pendingRequestsTitle": "Pending Requests",
   "decline": "Decline",
   "approve": "Approve",
@@ -169,7 +175,6 @@
   "declinedRequest": "Declined request from {name}",
   "@acceptedRequest": { "placeholders": { "name": { "type": "String" } } },
   "@declinedRequest": { "placeholders": { "name": { "type": "String" } } },
-
   "welcomeSpecialist": "Welcome, Dr. {name}!",
   "@welcomeSpecialist": { "placeholders": { "name": { "type": "String" } } },
   "appointmentsCount": "You have {count} appointments today.",
@@ -186,10 +191,27 @@
   "badgeCheck": "Check",
   "badgeViewAll": "View All",
   "badgeJoin": "Join",
-
   "upcomingAppointmentsTitle": "Upcoming Appointments",
   "tagTherapy": "Therapy",
   "tagCheckup": "Check-up",
   "tagConsultation": "Consultation",
-  "tagFollowup": "Follow-up"
+  "tagFollowup": "Follow-up",
+  "loginFailed": "Login failed. Please check your credentials.",
+  
+  "welcomeVolunteer": "Hello {name}!",
+  "@welcomeVolunteer": {
+    "description": "Welcome message for volunteer",
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "volunteerDashboardSubtitle": "Manage your workshops and activities",
+  "totalWorkshops": "Total",
+  "myWorkshops": "My Workshops",
+  "noApprovedWorkshops": "No approved workshops yet",
+  "noPendingWorkshops": "No pending workshops",
+  "workshopAdded": "Workshop added successfully!"
+  
 }
