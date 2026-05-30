@@ -44,10 +44,19 @@
   "volunteerType": "نوع العمل التطوعي",
   "hintVolunteerType": "مثال: مساعد فعاليات، قائد ورشة عمل",
   "thisFieldRequired": "هذا الحقل مطلوب",
+  "editProfile": "تعديل الملف الشخصي",
+  "changePassword": "تغيير كلمة المرور",
+  "darkMode": "الوضع المظلم",
+  "language": "اللغة",
+  "logout": "تسجيل الخروج",
   "hello": "مرحباً، {name}",
   "@hello": {
     "description": "تحية باسم المستخدم",
-    "placeholders": { "name": { "type": "String" } }
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
   },
   "workshopOverview": "هذه هي نظرة عامة على ورش العمل الخاصة بك",
   "total": "الإجمالي",
@@ -126,10 +135,15 @@
   "upcomingDoctor": "د. سارة ويلسون",
   "timeHour": "٤:٠٠",
   "timePeriod": "م",
-
   "clientDetailsTitle": "تفاصيل العميل",
   "ageYearsOld": "العمر: {age} سنة",
-  "@ageYearsOld": { "placeholders": { "age": { "type": "String" } } },
+  "@ageYearsOld": {
+    "placeholders": {
+      "age": {
+        "type": "String"
+      }
+    }
+  },
   "diagnosisTreatment": "التشخيص والعلاج",
   "diagnosis": "التشخيص",
   "therapyType": "نوع العلاج",
@@ -143,7 +157,6 @@
   "recentProgress": "التقدم الأخير",
   "importantNotes": "ملاحظات مهمة",
   "addNote": "أضف ملاحظة",
-
   "communityEventsSpecialistTitle": "فعاليات مجتمعية للاختصاصيين",
   "seatReserved": "تم حجز المقعد! 📅",
   "reservationCancelled": "تم إلغاء الحجز.",
@@ -152,14 +165,18 @@
   "categoryTraining": "تدريب",
   "categoryPeerReview": "مراجعة الأقران",
   "categoryConference": "مؤتمر",
-
   "myClientsTitle": "عملائي",
   "lastSessionLabel": "آخر جلسة:",
   "nextPlanLabel": "الخطة التالية:",
   "viewDetails": "عرض التفاصيل",
   "parentPrefix": "ولي الأمر: {parentName}",
-  "@parentPrefix": { "placeholders": { "parentName": { "type": "String" } } },
-
+  "@parentPrefix": {
+    "placeholders": {
+      "parentName": {
+        "type": "String"
+      }
+    }
+  },
   "pendingRequestsTitle": "الطلبات المعلقة",
   "decline": "رفض",
   "approve": "موافقة",
@@ -167,16 +184,45 @@
   "noPendingAppointments": "ليس لديك طلبات مواعيد معلقة.",
   "acceptedRequest": "تم قبول الطلب من {name}",
   "declinedRequest": "تم رفض الطلب من {name}",
-  "@acceptedRequest": { "placeholders": { "name": { "type": "String" } } },
-  "@declinedRequest": { "placeholders": { "name": { "type": "String" } } },
-
+  "@acceptedRequest": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "@declinedRequest": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "welcomeSpecialist": "مرحباً، د. {name}!",
-  "@welcomeSpecialist": { "placeholders": { "name": { "type": "String" } } },
+  "@welcomeSpecialist": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
   "appointmentsCount": "لديك {count} مواعيد اليوم.",
-  "@appointmentsCount": { "placeholders": { "count": { "type": "String" } } },
+  "@appointmentsCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
   "upNextSpecialist": "التالي",
   "startsInMinutes": "يبدأ بعد {minutes} دقيقة",
-  "@startsInMinutes": { "placeholders": { "minutes": { "type": "String" } } },
+  "@startsInMinutes": {
+    "placeholders": {
+      "minutes": {
+        "type": "String"
+      }
+    }
+  },
   "practiceOverview": "نظرة عامة على الممارسة",
   "pendingRequestsButton": "طلبات\nمعلقة",
   "todayAppointmentsButton": "مواعيد\nاليوم",
@@ -186,10 +232,19 @@
   "badgeCheck": "تحقق",
   "badgeViewAll": "عرض الكل",
   "badgeJoin": "انضم",
-
   "upcomingAppointmentsTitle": "المواعيد القادمة",
   "tagTherapy": "علاج",
   "tagCheckup": "فحص",
   "tagConsultation": "استشارة",
-  "tagFollowup": "متابعة"
+  "tagFollowup": "متابعة",
+  "loginFailed":"تسجيل الدخول قد فشل",
+  
+  "welcomeVolunteer": "مرحباً {name}!",
+  "volunteerDashboardSubtitle": "إدارة ورش العمل والأنشطة الخاصة بك",
+  "totalWorkshops": "الإجمالي",
+  "myWorkshops": "ورش العمل الخاصة بي",
+  "noApprovedWorkshops": "لا توجد ورش عمل معتمدة حتى الآن",
+  "noPendingWorkshops": "لا توجد ورش عمل معلقة",
+  "workshopAdded": "تمت إضافة ورشة العمل بنجاح!"
+
 }
