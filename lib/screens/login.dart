@@ -1,169 +1,274 @@
+import 'package:autism_world/screens/register.dart';
 import 'package:flutter/material.dart';
 import 'package:autism_world/l10n/app_localizations.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:autism_world/specialist/specialist.dart';
 
-class EventsScreen extends StatelessWidget {
-  EventsScreen({super.key});
+class LoginPage extends StatefulWidget {
+  const LoginPage({super.key});
 
-  static const Color primaryBlue = Color(0xFF1E88E5);
+  @override
+  State<LoginPage> createState() => _LoginPageState();
+}
 
-  // Bilingual event data
-  final List<Map<String, dynamic>> events = [
-    {
-      "title_en": "Sensory-Friendly Morning",
-      "title_ar": "صباح مناسب للحواس",
-      "date": "Oct 12, 10:00 AM",
-      "location_en": "City Aquarium",
-      "location_ar": "أكواريوم المدينة",
-      "description_en":
-          "Lights are dimmed and sounds are turned down for a comfortable experience.",
-      "description_ar": "يتم خفض الإضاءة والأصوات لتجربة مريحة.",
-    },
-    {
-      "title_en": "Autism-Friendly Movie",
-      "title_ar": "فيلم مناسب للتوحد",
-      "date": "Oct 15, 2:00 PM",
-      "location_en": "Cinema One",
-      "location_ar": "سينما ون",
-      "description_en":
-          "Low sound, lights slightly up, and freedom to move around the theater.",
-      "description_ar":
-          "صوت منخفض، إضاءة مرتفعة قليلاً، وحرية الحركة في أرجاء الصالة.",
-    },
-    {
-      "title_en": "Adaptive Sports Day",
-      "title_ar": "يوم رياضي تكيفي",
-      "date": "Oct 20, 9:00 AM",
-      "location_en": "Central Park",
-      "location_ar": "الحديقة المركزية",
-      "description_en":
-          "Specialized coaches helping kids enjoy soccer and track in a safe environment.",
-      "description_ar":
-          "مدربون متخصصون يساعدون الأطفال على الاستمتاع بكرة القدم وألعاب القوى في بيئة آمنة.",
-    },
-  ];
+class _LoginPageState extends State<LoginPage> {
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
+  final _formKey = GlobalKey<FormState>();
+  bool _isLoading = false;
+
+  // 1. Fixed: Isolated the async login mechanism cleanly outside the UI build sequence
+  Future<void> _login() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    final l10n = AppLocalizations.of(context)!;
+
+    final url = Uri.parse('http://127.0.0.1:3000/api');
+
+    try {
+      final response = await http.post(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: jsonEncode({
+          'email': _emailController.text.trim(),
+          'password': _passwordController.text,
+        }),
+      );
+
+      if (!mounted) return;
+
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(l10n.loginSuccessful),
+            backgroundColor: Colors.green,
+          ),
+        );
+      } else {
+        final errorData = jsonDecode(response.body);
+        final errorMessage = errorData['message'] ?? 'Login failed';
+
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
+        );
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(l10n.loginFailed), backgroundColor: Colors.red),
+      );
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
+  @override
+  void dispose() {
+    _emailController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
-    final isArabic = Localizations.localeOf(context).languageCode == 'ar';
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text(l10n.eventsTitle),
-        backgroundColor: Colors.white,
-        elevation: 0,
-        foregroundColor: Colors.black87,
-      ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(16),
-        itemCount: events.length,
-        itemBuilder: (context, index) {
-          final event = events[index];
-          final title = isArabic ? event['title_ar'] : event['title_en'];
-          final location = isArabic
-              ? event['location_ar']
-              : event['location_en'];
-          final description = isArabic
-              ? event['description_ar']
-              : event['description_en'];
-          final date = event['date'];
-
-          return Card(
-            elevation: 2,
-            margin: const EdgeInsets.only(bottom: 16),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(15),
-            ),
+      backgroundColor: Colors.white,
+      body: Center(
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.all(24.0),
+          child: Form(
+            key: _formKey,
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  height: 120,
-                  width: double.infinity,
+                  width: 130,
+                  height: 130,
                   decoration: BoxDecoration(
-                    color: primaryBlue.withOpacity(0.1),
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(15),
-                    ),
-                  ),
-                  child: Icon(
-                    Icons.event_available,
-                    size: 50,
-                    color: primaryBlue,
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.all(16.0),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.calendar_month,
-                            size: 16,
-                            color: Colors.grey,
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            date,
-                            style: const TextStyle(color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 4),
-                      Row(
-                        children: [
-                          const Icon(
-                            Icons.location_on,
-                            size: 16,
-                            color: Colors.grey,
-                          ),
-                          const SizedBox(width: 5),
-                          Text(
-                            location,
-                            style: const TextStyle(color: Colors.grey),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      Text(
-                        description,
-                        style: TextStyle(color: Colors.grey[800]),
-                      ),
-                      const SizedBox(height: 15),
-                      SizedBox(
-                        width: double.infinity,
-                        child: ElevatedButton(
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: primaryBlue,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          onPressed: () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(content: Text(l10n.interestNoted)),
-                            );
-                          },
-                          child: Text(l10n.imInterested),
-                        ),
+                    color: Colors.white,
+                    shape: BoxShape.circle,
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.08),
+                        blurRadius: 15,
+                        spreadRadius: 2,
+                        offset: const Offset(0, 5),
                       ),
                     ],
+                    border: Border.all(color: Colors.blue.shade50, width: 3),
                   ),
+                  child: ClipOval(
+                    child: Image.asset(
+                      'assets/logo.png',
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          color: Colors.blue.shade50,
+                          child: const Icon(
+                            Icons.emoji_nature_rounded,
+                            size: 60,
+                            color: Colors.blue,
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Text(
+                  l10n.appTitle,
+                  style: const TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Text(
+                  l10n.welcomeBack,
+                  style: const TextStyle(color: Colors.grey),
+                ),
+                const SizedBox(height: 40),
+
+                // Email Field
+                TextFormField(
+                  controller: _emailController,
+                  decoration: InputDecoration(
+                    hintText: l10n.hintEmail,
+                    labelText: l10n.email,
+                    hintStyle: TextStyle(color: Colors.grey[400]),
+                    prefixIcon: const Icon(
+                      Icons.email_outlined,
+                      color: Colors.grey,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty)
+                      return l10n.pleaseEnterEmail;
+                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value))
+                      return l10n.validEmail;
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 20),
+
+                // Password Field
+                TextFormField(
+                  controller: _passwordController,
+                  obscureText: true,
+                  decoration: InputDecoration(
+                    hintText: l10n.hintPassword,
+                    labelText: l10n.password,
+                    hintStyle: const TextStyle(
+                      letterSpacing: 2,
+                      color: Colors.grey,
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.lock_outline,
+                      color: Colors.grey,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty)
+                      return l10n.pleaseEnterPassword;
+                    if (value.length < 6) return l10n.passwordMinLength;
+                    return null;
+                  },
+                ),
+                const SizedBox(height: 32),
+
+                // 2. Fixed: Wired up the submission action & handling progress indicator status
+                SizedBox(
+                  width: double.infinity,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _login,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blue,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 20,
+                            width: 20,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
+                          )
+                        : Text(
+                            l10n.loginButton,
+                            style: const TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Text(
+                      l10n.dontHaveAccount,
+                      style: const TextStyle(color: Colors.grey),
+                    ),
+                    TextButton(
+                      onPressed: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const Register(),
+                          ),
+                        );
+                      },
+                      child: Text(
+                        l10n.registerHere,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: Colors.blue,
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
               ],
             ),
-          );
-        },
+          ),
+        ),
       ),
     );
   }
