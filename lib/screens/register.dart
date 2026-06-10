@@ -1,9 +1,11 @@
-import 'package:autism_world/Parent/ParentPage.dart';
+import 'dart:convert';
+import 'package:autism_world/screens/parent.dart';
 import 'package:autism_world/screens/login.dart';
-import 'package:autism_world/specialist/specialist.dart';
+import 'package:autism_world/screens/specialist/specialist.dart';
 import 'package:autism_world/screens/volunteer.dart';
 import 'package:flutter/material.dart';
-
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:autism_world/l10n/app_localizations.dart';
 
 class Register extends StatefulWidget {
@@ -26,10 +28,132 @@ class _RegisterState extends State<Register> {
   DateTime? selectedDateOfBirth;
 
   bool _isPasswordHidden = true;
+  bool loading = false;
 
   final GlobalKey<FormState> _formKey = GlobalKey<FormState>();
 
   String? selectedRole;
+  final String baseUrl = "http://127.0.0.1:8000";
+
+  Future<void> registerUser() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    setState(() => loading = true);
+
+    try {
+      // 1. Build payload dynamically to prevent empty string validation failures
+      final Map<String, String> registrationData = {
+        "name": nameController.text.trim(),
+        "email": emailController.text.trim(),
+        "password": passwordController.text,
+        "role": selectedRole!,
+      };
+
+      if (dateOfBirthController.text.isNotEmpty) {
+        registrationData["date_of_birth"] = dateOfBirthController.text;
+      }
+      if (phoneController.text.isNotEmpty) {
+        registrationData["phone"] = phoneController.text.trim();
+      }
+      if (addressController.text.isNotEmpty) {
+        registrationData["address"] = addressController.text.trim();
+      }
+      if (specializationController.text.isNotEmpty) {
+        registrationData["specialization"] = specializationController.text
+            .trim();
+      }
+      if (licenseController.text.isNotEmpty) {
+        registrationData["license_number"] = licenseController.text.trim();
+      }
+      if (typeController.text.isNotEmpty) {
+        registrationData["activity"] = typeController.text
+            .trim(); // Maps to your volunteer table structure
+      }
+
+      final response = await http.post(
+        Uri.parse("$baseUrl/api/register"),
+        headers: {"Accept": "application/json"},
+        body: registrationData,
+      );
+
+      if (!mounted) return;
+
+      print("--- RAW SERVER RESPONSE ---");
+      print("Status Code: ${response.statusCode}");
+      print("Body: ${response.body}");
+      print("---------------------------");
+
+      dynamic data;
+      try {
+        data = jsonDecode(response.body);
+      } on FormatException catch (_) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text("Server configuration error. Check debug console."),
+            backgroundColor: Colors.red,
+          ),
+        );
+        setState(() => loading = false);
+        return;
+      }
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        String token = "";
+        if (data["token"] != null) {
+          token = data["token"];
+          final prefs = await SharedPreferences.getInstance();
+          await prefs.setString('auth_token', token);
+        }
+
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(data["message"] ?? "Success")));
+
+        if (selectedRole == "Parent") {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const ParentPage()),
+          );
+        } else if (selectedRole == "Specialist") {
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(builder: (_) => const SpecialistPage()),
+          );
+        } else {
+          // FIX: Safely parse fallback parameters directly from local fields if server payload nests them differently
+          final String extractedName =
+              data["user"] != null && data["user"]["name"] != null
+              ? data["user"]["name"]
+              : nameController.text.trim();
+
+          Navigator.pushReplacement(
+            context,
+            MaterialPageRoute(
+              builder: (_) => VolunteerDashboard(
+                volunteerName: extractedName,
+                token: token, // Passes required argument correctly
+              ),
+            ),
+          );
+        }
+      } else {
+        // Displays validation errors if Laravel rejects any field
+        String errorMessage = data["message"] ?? "Registration failed";
+        if (data["errors"] != null) {
+          errorMessage = (data["errors"] as Map).values.first[0].toString();
+        }
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
+        );
+      }
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+      );
+    }
+
+    setState(() => loading = false);
+  }
 
   @override
   void dispose() {
@@ -45,18 +169,62 @@ class _RegisterState extends State<Register> {
     super.dispose();
   }
 
+  // Design Engine: Encapsulated field wrapper for modern visual hierarchy
+  InputDecoration _buildModernInput({
+    required String label,
+    required String hint,
+    required IconData prefixIcon,
+    Widget? suffixIcon,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      prefixIcon: Icon(prefixIcon, color: Colors.grey.shade500),
+      suffixIcon: suffixIcon,
+      labelStyle: TextStyle(color: Colors.grey.shade700, fontSize: 15),
+      hintStyle: const TextStyle(
+        letterSpacing: 1,
+        color: Colors.grey,
+        fontSize: 14,
+      ),
+      filled: true,
+      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 20),
+      border: OutlineInputBorder(borderRadius: BorderRadius.circular(16)),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: Colors.grey.shade300, width: 1.2),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: const BorderSide(color: Colors.blue, width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: Colors.red.shade400, width: 1.2),
+      ),
+      focusedErrorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: Colors.red.shade500, width: 2),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
     return Scaffold(
+      backgroundColor: Colors.grey.shade50,
       body: SingleChildScrollView(
+        physics: const BouncingScrollPhysics(),
         child: Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 30),
           child: Form(
             key: _formKey,
             child: Column(
               children: [
+                const SizedBox(height: 20),
                 Center(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 24.0),
@@ -68,15 +236,15 @@ class _RegisterState extends State<Register> {
                         shape: BoxShape.circle,
                         boxShadow: [
                           BoxShadow(
-                            color: Colors.black.withOpacity(0.08),
-                            blurRadius: 15,
-                            spreadRadius: 2,
-                            offset: const Offset(0, 5),
+                            color: Colors.black.withOpacity(0.06),
+                            blurRadius: 20,
+                            spreadRadius: 1,
+                            offset: const Offset(0, 8),
                           ),
                         ],
                         border: Border.all(
                           color: Colors.blue.shade50,
-                          width: 3,
+                          width: 4,
                         ),
                       ),
                       child: ClipOval(
@@ -98,44 +266,32 @@ class _RegisterState extends State<Register> {
                     ),
                   ),
                 ),
-                // --------------------------------------------------------
                 Text(
                   l10n.joinCommunity,
                   style: const TextStyle(
-                    fontSize: 25,
+                    fontSize: 26,
                     fontWeight: FontWeight.bold,
+                    color: Color(0xFF1E293B),
                   ),
                 ),
-                const SizedBox(height: 10),
-
+                const SizedBox(height: 12),
                 Text(
                   l10n.createAccountDesc,
                   textAlign: TextAlign.center,
-                  style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+                  style: TextStyle(
+                    fontSize: 15,
+                    color: Colors.grey[600],
+                    height: 1.4,
+                  ),
                 ),
-
-                const SizedBox(height: 30),
+                const SizedBox(height: 35),
 
                 TextFormField(
                   controller: nameController,
-                  decoration: InputDecoration(
-                    labelText: l10n.fullName,
-                    hintText: l10n.hintFullName,
-                    hintStyle: const TextStyle(
-                      letterSpacing: 2,
-                      color: Colors.grey,
-                    ),
-                    prefixIcon: const Icon(
-                      Icons.person_outline,
-                      color: Colors.grey,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
-                    ),
+                  decoration: _buildModernInput(
+                    label: l10n.fullName,
+                    hint: l10n.hintFullName,
+                    prefixIcon: Icons.person_outline,
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -144,26 +300,15 @@ class _RegisterState extends State<Register> {
                     return null;
                   },
                 ),
-
-                const SizedBox(height: 30),
+                const SizedBox(height: 20),
 
                 TextFormField(
                   controller: emailController,
-                  decoration: InputDecoration(
-                    hintText: l10n.hintEmail,
-                    labelText: l10n.email,
-                    hintStyle: TextStyle(color: Colors.grey[400]),
-                    prefixIcon: const Icon(
-                      Icons.email_outlined,
-                      color: Colors.grey,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
-                    ),
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: _buildModernInput(
+                    label: l10n.email,
+                    hint: l10n.hintEmail,
+                    prefixIcon: Icons.email_outlined,
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
@@ -175,44 +320,27 @@ class _RegisterState extends State<Register> {
                     return null;
                   },
                 ),
-
-                const SizedBox(height: 30),
+                const SizedBox(height: 20),
 
                 TextFormField(
                   controller: passwordController,
                   obscureText: _isPasswordHidden,
-                  decoration: InputDecoration(
-                    hintText: l10n.hintPassword,
-                    labelText: l10n.password,
-                    hintStyle: const TextStyle(
-                      letterSpacing: 2,
-                      color: Colors.grey,
-                    ),
-                    prefixIcon: const Icon(
-                      Icons.lock_outline,
-                      color: Colors.grey,
-                    ),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
-                    ),
+                  decoration: _buildModernInput(
+                    label: l10n.password,
+                    hint: l10n.hintPassword,
+                    prefixIcon: Icons.lock_outline,
                     suffixIcon: IconButton(
                       icon: Icon(
                         _isPasswordHidden
                             ? Icons.visibility
                             : Icons.visibility_off,
+                        color: Colors.grey,
                       ),
-                      onPressed: () {
-                        setState(() {
-                          _isPasswordHidden = !_isPasswordHidden;
-                        });
-                      },
+                      onPressed: () => setState(
+                        () => _isPasswordHidden = !_isPasswordHidden,
+                      ),
                     ),
                   ),
-
                   validator: (value) {
                     if (value == null || value.length < 6) {
                       return l10n.passwordMinLength;
@@ -222,28 +350,14 @@ class _RegisterState extends State<Register> {
                 ),
 
                 if (selectedRole == 'Parent') ...[
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 20),
                   TextFormField(
                     controller: dateOfBirthController,
                     readOnly: true,
-                    decoration: InputDecoration(
-                      labelText: l10n.dateOfBirth,
-                      hintText: l10n.hintDob,
-                      hintStyle: const TextStyle(
-                        letterSpacing: 2,
-                        color: Colors.grey,
-                      ),
-                      prefixIcon: const Icon(
-                        Icons.calendar_today_outlined,
-                        color: Colors.grey,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
+                    decoration: _buildModernInput(
+                      label: l10n.dateOfBirth,
+                      hint: l10n.hintDob,
+                      prefixIcon: Icons.calendar_today_outlined,
                     ),
                     onTap: () async {
                       DateTime? pickedDate = await showDatePicker(
@@ -252,12 +366,11 @@ class _RegisterState extends State<Register> {
                         firstDate: DateTime(1900),
                         lastDate: DateTime.now(),
                       );
-
                       if (pickedDate != null) {
                         setState(() {
                           selectedDateOfBirth = pickedDate;
                           dateOfBirthController.text =
-                              "${pickedDate.day}/${pickedDate.month}/${pickedDate.year}";
+                              "${pickedDate.year}-${pickedDate.month.toString().padLeft(2, '0')}-${pickedDate.day.toString().padLeft(2, '0')}";
                         });
                       }
                     },
@@ -269,29 +382,14 @@ class _RegisterState extends State<Register> {
                       return null;
                     },
                   ),
-
-                  const SizedBox(height: 30),
-
+                  const SizedBox(height: 20),
                   TextFormField(
                     controller: phoneController,
-                    decoration: InputDecoration(
-                      labelText: l10n.phoneNumber,
-                      hintText: l10n.hintPhone,
-                      hintStyle: const TextStyle(
-                        letterSpacing: 2,
-                        color: Colors.grey,
-                      ),
-                      prefixIcon: const Icon(
-                        Icons.phone_outlined,
-                        color: Colors.grey,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
+                    keyboardType: TextInputType.phone,
+                    decoration: _buildModernInput(
+                      label: l10n.phoneNumber,
+                      hint: l10n.hintPhone,
+                      prefixIcon: Icons.phone_outlined,
                     ),
                     validator: (value) {
                       if (selectedRole == 'Parent' &&
@@ -301,27 +399,13 @@ class _RegisterState extends State<Register> {
                       return null;
                     },
                   ),
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 20),
                   TextFormField(
                     controller: addressController,
-                    decoration: InputDecoration(
-                      labelText: l10n.address,
-                      hintText: l10n.hintAddress,
-                      hintStyle: const TextStyle(
-                        letterSpacing: 2,
-                        color: Colors.grey,
-                      ),
-                      prefixIcon: const Icon(
-                        Icons.home_outlined,
-                        color: Colors.grey,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
+                    decoration: _buildModernInput(
+                      label: l10n.address,
+                      hint: l10n.hintAddress,
+                      prefixIcon: Icons.home_outlined,
                     ),
                     validator: (value) {
                       if (selectedRole == 'Parent' &&
@@ -334,27 +418,13 @@ class _RegisterState extends State<Register> {
                 ],
 
                 if (selectedRole == 'Specialist') ...[
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 20),
                   TextFormField(
                     controller: specializationController,
-                    decoration: InputDecoration(
-                      labelText: l10n.specialization,
-                      hintText: l10n.hintSpecialization,
-                      hintStyle: const TextStyle(
-                        letterSpacing: 2,
-                        color: Colors.grey,
-                      ),
-                      prefixIcon: const Icon(
-                        Icons.work_outline,
-                        color: Colors.grey,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
+                    decoration: _buildModernInput(
+                      label: l10n.specialization,
+                      hint: l10n.hintSpecialization,
+                      prefixIcon: Icons.work_outline,
                     ),
                     validator: (value) {
                       if (selectedRole == 'Specialist' &&
@@ -364,29 +434,13 @@ class _RegisterState extends State<Register> {
                       return null;
                     },
                   ),
-
-                  const SizedBox(height: 30),
-
+                  const SizedBox(height: 20),
                   TextFormField(
                     controller: licenseController,
-                    decoration: InputDecoration(
-                      labelText: l10n.licenseNumber,
-                      hintText: l10n.hintLicense,
-                      hintStyle: const TextStyle(
-                        letterSpacing: 2,
-                        color: Colors.grey,
-                      ),
-                      prefixIcon: const Icon(
-                        Icons.badge_outlined,
-                        color: Colors.grey,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
+                    decoration: _buildModernInput(
+                      label: l10n.licenseNumber,
+                      hint: l10n.hintLicense,
+                      prefixIcon: Icons.badge_outlined,
                     ),
                     validator: (value) {
                       if (selectedRole == 'Specialist' &&
@@ -399,53 +453,30 @@ class _RegisterState extends State<Register> {
                 ],
 
                 if (selectedRole == 'Volunteer') ...[
-                  const SizedBox(height: 30),
+                  const SizedBox(height: 20),
                   TextFormField(
                     controller: phoneController,
-
-                    decoration: InputDecoration(
-                      labelText: l10n.phoneNumber,
-                      hintText: l10n.hintPhone,
-                      hintStyle: const TextStyle(
-                        letterSpacing: 2,
-                        color: Colors.grey,
-                      ),
-                      prefixIcon: const Icon(
-                        Icons.phone_outlined,
-                        color: Colors.grey,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
+                    keyboardType: TextInputType.phone,
+                    decoration: _buildModernInput(
+                      label: l10n.phoneNumber,
+                      hint: l10n.hintPhone,
+                      prefixIcon: Icons.phone_outlined,
                     ),
+                    validator: (value) {
+                      if (selectedRole == 'Volunteer' &&
+                          (value == null || value.isEmpty)) {
+                        return l10n.thisFieldRequired;
+                      }
+                      return null;
+                    },
                   ),
-
-                  const SizedBox(height: 30),
-
+                  const SizedBox(height: 20),
                   TextFormField(
                     controller: typeController,
-                    decoration: InputDecoration(
-                      labelText: l10n.volunteerType,
-                      hintText: l10n.hintVolunteerType,
-                      hintStyle: const TextStyle(
-                        letterSpacing: 2,
-                        color: Colors.grey,
-                      ),
-                      prefixIcon: const Icon(
-                        Icons.person_outline,
-                        color: Colors.grey,
-                      ),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                      enabledBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        borderSide: BorderSide(color: Colors.grey.shade300),
-                      ),
+                    decoration: _buildModernInput(
+                      label: l10n.volunteerType,
+                      hint: l10n.hintVolunteerType,
+                      prefixIcon: Icons.person_outline,
                     ),
                     validator: (value) {
                       if (selectedRole == 'Volunteer' &&
@@ -456,7 +487,8 @@ class _RegisterState extends State<Register> {
                     },
                   ),
                 ],
-                const SizedBox(height: 30),
+
+                const SizedBox(height: 20),
                 DropdownButtonFormField<String>(
                   value: selectedRole,
                   hint: Text(l10n.selectRole),
@@ -471,122 +503,100 @@ class _RegisterState extends State<Register> {
                       child: Text(l10n.volunteer),
                     ),
                   ],
-                  onChanged: (value) {
-                    setState(() {
-                      selectedRole = value!;
-                    });
-                  },
-                  validator: (value) {
-                    if (value == null) {
-                      return l10n.pleaseSelectRole;
-                    }
-                    return null;
-                  },
+                  onChanged: (value) => setState(() => selectedRole = value),
+                  validator: (value) =>
+                      value == null ? l10n.pleaseSelectRole : null,
+                  icon: const Icon(
+                    Icons.arrow_drop_down_circle_outlined,
+                    color: Colors.blue,
+                  ),
                   decoration: InputDecoration(
                     labelText: l10n.iAmA,
-                    border: const OutlineInputBorder(
-                      borderRadius: BorderRadius.all(Radius.circular(10)),
-                      borderSide: BorderSide(color: Colors.grey),
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(
+                      vertical: 16,
+                      horizontal: 20,
+                    ),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
                     ),
                     enabledBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                      borderSide: BorderSide(color: Colors.grey.shade300),
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: BorderSide(
+                        color: Colors.grey.shade300,
+                        width: 1.2,
+                      ),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(16),
+                      borderSide: const BorderSide(
+                        color: Colors.blue,
+                        width: 2,
+                      ),
                     ),
                   ),
                 ),
-                const SizedBox(height: 30),
+                const SizedBox(height: 35),
 
                 SizedBox(
-                  width: 300,
-                  height: 43,
+                  width: double.infinity,
+                  height: 52,
                   child: ElevatedButton(
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      elevation: 2,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                     ),
-                    onPressed: () {
-                      final isValid = _formKey.currentState!.validate();
-
-                      if (!isValid) {
-                        return;
-                      }
-                      if (selectedRole == 'Parent') {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(l10n.parentAccountCreated),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const ParentPage(),
-                          ),
-                        );
-                      } else if (selectedRole == 'Specialist') {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(l10n.specialistAccountCreated),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const SpecialistPage(),
-                          ),
-                        );
-                      } else {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(l10n.volunteerAccountCreated),
-                            backgroundColor: Colors.green,
-                          ),
-                        );
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const VolunteerDashboard(
-                              volunteerName: 'john doe',
+                    onPressed: loading ? null : registerUser,
+                    child: loading
+                        ? const SizedBox(
+                            width: 24,
+                            height: 24,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2.5,
+                            ),
+                          )
+                        : Text(
+                            l10n.createAccount,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
                             ),
                           ),
-                        );
-                      }
+                  ),
+                ),
+                const SizedBox(height: 25),
+                Center(
+                  child: TextButton(
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (_) => const LoginPage()),
+                      );
                     },
-                    child: Text(l10n.createAccount),
+                    style: TextButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
+                    ),
+                    child: Text(
+                      l10n.login,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.blue,
+                      ),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      l10n.alreadyHaveAccount,
-                      style: const TextStyle(color: Colors.grey),
-                    ),
-                    TextButton(
-                      onPressed: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const LoginPage(),
-                          ),
-                        );
-                      },
-                      child: Text(
-                        l10n.login,
-                        style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          color: Colors.blue,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
               ],
             ),
           ),
@@ -595,373 +605,3 @@ class _RegisterState extends State<Register> {
     );
   }
 }
-(hayde l designed)
-
-
-
-
-(hayde l marbuta bl backend)
-
-import 'dart:convert';
-import 'package:autism_world/Parent/ParentPage.dart';
-import 'package:autism_world/specialist/specialist.dart';
-import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:autism_world/l10n/app_localizations.dart';
-import 'package:autism_world/screens/login.dart';
-import 'package:autism_world/screens/volunteer.dart';
-
-class Register extends StatefulWidget {
-  const Register({super.key});
-
-  @override
-  State<Register> createState() => _RegisterState();
-}
-
-class _RegisterState extends State<Register> {
-  final _formKey = GlobalKey<FormState>();
-
-  bool loading = false;
-  bool hidePassword = true;
-
-  String? selectedRole;
-  final String baseUrl = "http://127.0.0.1:8000";
-
-  final name = TextEditingController();
-  final email = TextEditingController();
-  final password = TextEditingController();
-  final dob = TextEditingController();
-  final phone = TextEditingController();
-  final address = TextEditingController();
-  final specialization = TextEditingController();
-  final license = TextEditingController();
-  final volunteerType = TextEditingController();
-
-  Future<void> pickDate() async {
-    final date = await showDatePicker(
-      context: context,
-      initialDate: DateTime(2000),
-      firstDate: DateTime(1950),
-      lastDate: DateTime.now(),
-    );
-
-    if (date != null) {
-      setState(() {
-        dob.text =
-            "${date.year}-${date.month.toString().padLeft(2, '0')}-${date.day.toString().padLeft(2, '0')}";
-      });
-    }
-  }
-
-  Future<void> registerUser() async {
-    if (!_formKey.currentState!.validate()) return;
-
-    setState(() => loading = true);
-
-    try {
-      final response = await http.post(
-        Uri.parse("$baseUrl/api/register"), //[cite: 1, 5]
-        headers: {"Accept": "application/json"}, //
-        body: {
-          "name": name.text, //[cite: 1]
-          "email": email.text, //[cite: 1]
-          "password": password.text, //[cite: 1]
-          "role": selectedRole!, //[cite: 1]
-          "date_of_birth": dob.text, //[cite: 1]
-          "phone": phone.text, //[cite: 1]
-          "address": address.text, //[cite: 1]
-          "specialization": specialization.text, //[cite: 1]
-          "license_number": license.text, //[cite: 1]
-          "volunteer_type": volunteerType.text, //[cite: 1]
-        },
-      );
-
-      final data = jsonDecode(response.body); //[cite: 1]
-
-      if (!mounted) return; //[cite: 1]
-
-      if (response.statusCode == 200 || response.statusCode == 201) {
-        //[cite: 1]
-
-        // ==================== THE GOLDEN FIX ====================
-        // Check if the backend returned the token, and save it locally
-        if (data["token"] != null) {
-          final token = data["token"];
-          final prefs = await SharedPreferences.getInstance();
-          await prefs.setString('auth_token', token);
-        }
-        // ========================================================
-
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(data["message"] ?? "Success")), //[cite: 1]
-        );
-
-        if (selectedRole == "Parent") {
-          //[cite: 1]
-          Navigator.pushReplacement(
-            //[cite: 1]
-            context,
-            MaterialPageRoute(builder: (_) => const ParentPage()), //[cite: 1]
-          );
-        } else if (selectedRole == "Specialist") {
-          //[cite: 1]
-          Navigator.pushReplacement(
-            //[cite: 1]
-            context,
-            MaterialPageRoute(
-              builder: (_) => const SpecialistPage(),
-            ), //[cite: 1]
-          );
-        } else {
-          Navigator.pushReplacement(
-            //[cite: 1]
-            context,
-            MaterialPageRoute(
-              //[cite: 1]
-              builder: (_) =>
-                  const VolunteerDashboard(volunteerName: ""), //[cite: 1]
-            ),
-          );
-        }
-      } else {
-        ScaffoldMessenger.of(context).showSnackBar(
-          //[cite: 1]
-          SnackBar(
-            content: Text(data["message"] ?? "Registration failed"),
-          ), //[cite: 1]
-        );
-      }
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        //[cite: 1]
-        SnackBar(content: Text("Error: $e")), //[cite: 1]
-      );
-    }
-
-    setState(() => loading = false); //[cite: 1]
-  }
-
-  @override
-  void dispose() {
-    name.dispose();
-    email.dispose();
-    password.dispose();
-    dob.dispose();
-    phone.dispose();
-    address.dispose();
-    specialization.dispose();
-    license.dispose();
-    volunteerType.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
-
-    return Scaffold(
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.center,
-            children: [
-              const SizedBox(height: 50),
-
-              const Icon(Icons.favorite, size: 70, color: Colors.blue),
-
-              const SizedBox(height: 10),
-              Text(
-                l10n.joinCommunity,
-                textAlign: TextAlign.center,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-
-              const SizedBox(height: 5),
-              Text(
-                l10n.createAccountDesc,
-                textAlign: TextAlign.center,
-                style: TextStyle(color: Colors.grey[600]),
-              ),
-
-              const SizedBox(height: 30),
-
-              // NAME
-              TextFormField(
-                controller: name,
-                decoration: InputDecoration(labelText: l10n.fullName),
-                validator: (v) =>
-                    v == null || v.isEmpty ? l10n.pleaseEnterName : null,
-              ),
-
-              const SizedBox(height: 15),
-
-              // EMAIL
-              TextFormField(
-                controller: email,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(labelText: l10n.email),
-                validator: (v) =>
-                    v == null || v.isEmpty ? l10n.pleaseEnterEmail : null,
-              ),
-
-              const SizedBox(height: 15),
-
-              // PASSWORD
-              TextFormField(
-                controller: password,
-                obscureText: hidePassword,
-                decoration: InputDecoration(
-                  labelText: l10n.password,
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      hidePassword ? Icons.visibility : Icons.visibility_off,
-                    ),
-                    onPressed: () =>
-                        setState(() => hidePassword = !hidePassword),
-                  ),
-                ),
-                validator: (v) =>
-                    v == null || v.length < 6 ? l10n.passwordMinLength : null,
-              ),
-
-              const SizedBox(height: 15),
-
-              // ROLE
-              DropdownButtonFormField<String>(
-                value: selectedRole,
-                decoration: InputDecoration(labelText: l10n.selectRole),
-                items: [
-                  DropdownMenuItem(value: "Parent", child: Text(l10n.parent)),
-                  DropdownMenuItem(
-                    value: "Specialist",
-                    child: Text(l10n.specialist),
-                  ),
-                  DropdownMenuItem(
-                    value: "Volunteer",
-                    child: Text(l10n.volunteer),
-                  ),
-                ],
-                onChanged: (v) => setState(() => selectedRole = v),
-                validator: (v) => v == null ? l10n.pleaseSelectRole : null,
-              ),
-
-              const SizedBox(height: 25),
-
-              // ================= PARENT FIELDS =================
-              if (selectedRole == "Parent") ...[
-                TextFormField(
-                  controller: dob,
-                  readOnly: true,
-                  onTap: pickDate,
-                  decoration: const InputDecoration(
-                    labelText: "Date of Birth",
-                    suffixIcon: Icon(Icons.calendar_month),
-                  ),
-                  validator: (v) => v == null || v.isEmpty ? "Required" : null,
-                ),
-                const SizedBox(height: 15),
-
-                TextFormField(
-                  controller: phone,
-                  decoration: InputDecoration(labelText: l10n.phoneNumber),
-                  validator: (v) =>
-                      v == null || v.isEmpty ? l10n.thisFieldRequired : null,
-                ),
-                const SizedBox(height: 15),
-
-                TextFormField(
-                  controller: address,
-                  decoration: InputDecoration(labelText: l10n.address),
-                  validator: (v) =>
-                      v == null || v.isEmpty ? l10n.thisFieldRequired : null,
-                ),
-              ],
-
-              // ================= SPECIALIST FIELDS =================
-              if (selectedRole == "Specialist") ...[
-                TextFormField(
-                  controller: specialization,
-                  decoration: InputDecoration(labelText: l10n.specialization),
-                  validator: (v) =>
-                      v == null || v.isEmpty ? l10n.thisFieldRequired : null,
-                ),
-                const SizedBox(height: 15),
-
-                TextFormField(
-                  controller: license,
-                  decoration: InputDecoration(labelText: l10n.licenseNumber),
-                  validator: (v) =>
-                      v == null || v.isEmpty ? l10n.thisFieldRequired : null,
-                ),
-              ],
-
-              // ================= VOLUNTEER FIELDS =================
-              if (selectedRole == "Volunteer") ...[
-                TextFormField(
-                  controller: phone,
-                  decoration: InputDecoration(labelText: l10n.phoneNumber),
-                  validator: (v) =>
-                      v == null || v.isEmpty ? l10n.thisFieldRequired : null,
-                ),
-                const SizedBox(height: 15),
-
-                TextFormField(
-                  controller: volunteerType,
-                  decoration: InputDecoration(labelText: l10n.volunteerType),
-                  validator: (v) =>
-                      v == null || v.isEmpty ? l10n.thisFieldRequired : null,
-                ),
-              ],
-
-              const SizedBox(height: 30),
-
-              // ================= REGISTER BUTTON =================
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: loading ? null : registerUser,
-                  child: loading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : Text(l10n.createAccount),
-                ),
-              ),
-
-              const SizedBox(height: 15),
-
-              // ================= CENTER LOGIN BUTTON =================
-              Center(
-                child: TextButton(
-                  onPressed: () {
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const LoginPage()),
-                    );
-                  },
-                  child: Text(
-                    l10n.login,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.blue,
-                    ),
-                  ),
-                ),
-              ),
-
-              const SizedBox(height: 20),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-
