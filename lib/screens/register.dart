@@ -25,8 +25,13 @@ class _RegisterState extends State<Register> {
   TextEditingController specializationController = TextEditingController();
   TextEditingController licenseController = TextEditingController();
   TextEditingController typeController = TextEditingController();
-  DateTime? selectedDateOfBirth;
 
+  // Added Specialist Specific Controllers
+  TextEditingController experienceController = TextEditingController();
+  TextEditingController locationController = TextEditingController();
+  TextEditingController descriptionController = TextEditingController();
+
+  DateTime? selectedDateOfBirth;
   bool _isPasswordHidden = true;
   bool loading = false;
 
@@ -41,7 +46,6 @@ class _RegisterState extends State<Register> {
     setState(() => loading = true);
 
     try {
-      // 1. Build payload dynamically to prevent empty string validation failures
       final Map<String, String> registrationData = {
         "name": nameController.text.trim(),
         "email": emailController.text.trim(),
@@ -66,8 +70,14 @@ class _RegisterState extends State<Register> {
         registrationData["license_number"] = licenseController.text.trim();
       }
       if (typeController.text.isNotEmpty) {
-        registrationData["activity"] = typeController.text
-            .trim(); // Maps to your volunteer table structure
+        registrationData["activity"] = typeController.text.trim();
+      }
+
+      // Appending newly added structural specialist parameters to payload
+      if (selectedRole == "Specialist") {
+        registrationData["experience_years"] = experienceController.text.trim();
+        registrationData["clinic_location"] = locationController.text.trim();
+        registrationData["description"] = descriptionController.text.trim();
       }
 
       final response = await http.post(
@@ -105,9 +115,11 @@ class _RegisterState extends State<Register> {
           await prefs.setString('auth_token', token);
         }
 
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(data["message"] ?? "Success")));
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(data["message"] ?? "Registration successful!"),
+          ),
+        );
 
         if (selectedRole == "Parent") {
           Navigator.pushReplacement(
@@ -115,12 +127,14 @@ class _RegisterState extends State<Register> {
             MaterialPageRoute(builder: (_) => const ParentPage()),
           );
         } else if (selectedRole == "Specialist") {
+          // INTERCEPT NAVIGATION: Push to approval message container screen instead of the direct dashboard
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (_) => const SpecialistPage()),
+            MaterialPageRoute(
+              builder: (_) => const SpecialistPendingApprovalPage(),
+            ),
           );
         } else {
-          // FIX: Safely parse fallback parameters directly from local fields if server payload nests them differently
           final String extractedName =
               data["user"] != null && data["user"]["name"] != null
               ? data["user"]["name"]
@@ -131,13 +145,12 @@ class _RegisterState extends State<Register> {
             MaterialPageRoute(
               builder: (_) => VolunteerDashboard(
                 volunteerName: extractedName,
-                token: token, // Passes required argument correctly
+                token: token,
               ),
             ),
           );
         }
       } else {
-        // Displays validation errors if Laravel rejects any field
         String errorMessage = data["message"] ?? "Registration failed";
         if (data["errors"] != null) {
           errorMessage = (data["errors"] as Map).values.first[0].toString();
@@ -166,10 +179,12 @@ class _RegisterState extends State<Register> {
     specializationController.dispose();
     licenseController.dispose();
     typeController.dispose();
+    experienceController.dispose();
+    locationController.dispose();
+    descriptionController.dispose();
     super.dispose();
   }
 
-  // Design Engine: Encapsulated field wrapper for modern visual hierarchy
   InputDecoration _buildModernInput({
     required String label,
     required String hint,
@@ -294,9 +309,8 @@ class _RegisterState extends State<Register> {
                     prefixIcon: Icons.person_outline,
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
+                    if (value == null || value.isEmpty)
                       return l10n.pleaseEnterName;
-                    }
                     return null;
                   },
                 ),
@@ -311,12 +325,10 @@ class _RegisterState extends State<Register> {
                     prefixIcon: Icons.email_outlined,
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty) {
+                    if (value == null || value.isEmpty)
                       return l10n.pleaseEnterEmail;
-                    }
-                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value))
                       return l10n.validEmail;
-                    }
                     return null;
                   },
                 ),
@@ -342,9 +354,8 @@ class _RegisterState extends State<Register> {
                     ),
                   ),
                   validator: (value) {
-                    if (value == null || value.length < 6) {
+                    if (value == null || value.length < 6)
                       return l10n.passwordMinLength;
-                    }
                     return null;
                   },
                 ),
@@ -441,6 +452,64 @@ class _RegisterState extends State<Register> {
                       label: l10n.licenseNumber,
                       hint: l10n.hintLicense,
                       prefixIcon: Icons.badge_outlined,
+                    ),
+                    validator: (value) {
+                      if (selectedRole == 'Specialist' &&
+                          (value == null || value.isEmpty)) {
+                        return l10n.thisFieldRequired;
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 20),
+
+                  // NEW FIELD: Years of Experience
+                  TextFormField(
+                    controller: experienceController,
+                    keyboardType: TextInputType.number,
+                    decoration: _buildModernInput(
+                      label: "Years of Experience",
+                      hint: "Enter your total years practicing",
+                      prefixIcon: Icons.timeline_outlined,
+                    ),
+                    validator: (value) {
+                      if (selectedRole == 'Specialist' &&
+                          (value == null || value.isEmpty)) {
+                        return l10n.thisFieldRequired;
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 20),
+
+                  // NEW FIELD: Clinic Location
+                  TextFormField(
+                    controller: locationController,
+                    decoration: _buildModernInput(
+                      label: "Clinic Location / Address",
+                      hint: "Enter physical clinic workplace address",
+                      prefixIcon: Icons.map_outlined,
+                    ),
+                    validator: (value) {
+                      if (selectedRole == 'Specialist' &&
+                          (value == null || value.isEmpty)) {
+                        return l10n.thisFieldRequired;
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 20),
+
+                  // NEW FIELD: Description
+                  TextFormField(
+                    controller: descriptionController,
+                    maxLines: 3,
+                    keyboardType: TextInputType.multiline,
+                    decoration: _buildModernInput(
+                      label: "Professional Summary / Biography",
+                      hint:
+                          "Write a short summary about your background therapies",
+                      prefixIcon: Icons.description_outlined,
                     ),
                     validator: (value) {
                       if (selectedRole == 'Specialist' &&
@@ -600,6 +669,94 @@ class _RegisterState extends State<Register> {
               ],
             ),
           ),
+        ),
+      ),
+    );
+  }
+}
+
+/// --- APPROVAL LOCKOUT WINDOW COMPONENT ---
+class SpecialistPendingApprovalPage extends StatelessWidget {
+  const SpecialistPendingApprovalPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: Colors.white,
+      body: Padding(
+        padding: const EdgeInsets.all(32.0),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: Colors.amber.shade50,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                Icons.gavel_rounded,
+                size: 80,
+                color: Colors.amber.shade800,
+              ),
+            ),
+            const SizedBox(height: 30),
+            const Text(
+              "Application Under Review",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 24,
+                fontWeight: FontWeight.bold,
+                color: Color(0xFF1E293B),
+              ),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              "Thank you for joining our community! To maintain a safe space for families, all specialist profiles must be manually validated by an administrator.",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 15,
+                color: Colors.black54,
+                height: 1.5,
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              "You will be granted access to your dashboard once your medical credentials and licenses are approved.",
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                fontSize: 14,
+                color: Colors.black45,
+                fontStyle: FontStyle.italic,
+              ),
+            ),
+            const SizedBox(height: 40),
+            SizedBox(
+              width: double.infinity,
+              height: 50,
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginPage()),
+                    (route) => false,
+                  );
+                },
+                icon: const Icon(Icons.arrow_back, color: Colors.white),
+                label: const Text(
+                  "Return to Login",
+                  style: TextStyle(color: Colors.white, fontSize: 16),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blue,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
