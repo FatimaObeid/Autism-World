@@ -1,4 +1,7 @@
+import 'package:autism_world/Parent/ParentPage.dart';
+import 'package:autism_world/adminDashboard.dart';
 import 'package:autism_world/screens/register.dart';
+import 'package:autism_world/screens/volunteer.dart';
 import 'package:flutter/material.dart';
 import 'package:autism_world/l10n/app_localizations.dart';
 import 'package:http/http.dart' as http;
@@ -19,7 +22,6 @@ class _LoginPageState extends State<LoginPage> {
   final _formKey = GlobalKey<FormState>();
   bool _isLoading = false;
 
-  // 1. Fixed: Isolated the async login mechanism cleanly outside the UI build sequence
   Future<void> _login() async {
     if (!_formKey.currentState!.validate()) return;
 
@@ -29,7 +31,8 @@ class _LoginPageState extends State<LoginPage> {
 
     final l10n = AppLocalizations.of(context)!;
 
-    final url = Uri.parse('http://127.0.0.1:3000/api');
+    // For android emulators use 10.0.2.2, for iOS/Web use 127.0.0.1
+    final url = Uri.parse('http://127.0.0.1:8000/api/login');
 
     try {
       final response = await http.post(
@@ -43,11 +46,23 @@ class _LoginPageState extends State<LoginPage> {
           'password': _passwordController.text,
         }),
       );
+      print("LOGIN STATUS: ${response.statusCode}");
+      print("LOGIN BODY: ${response.body}");
+      final data = jsonDecode(response.body);
 
-      if (!mounted) return;
+      if (response.statusCode == 200 && data['success'] == true) {
+        final prefs = await SharedPreferences.getInstance();
+        await prefs.setString('auth_token', data['token'] ?? '');
 
-      if (response.statusCode == 200) {
-        final data = jsonDecode(response.body);
+        // Safe role extraction logic from your first code
+        String extractedRole = 'parent';
+        if (data['user'] != null && data['user']['role'] != null) {
+          extractedRole = data['user']['role'].toString().toLowerCase().trim();
+        }
+
+        await prefs.setString('user_role', extractedRole);
+
+        if (!mounted) return;
 
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -55,18 +70,47 @@ class _LoginPageState extends State<LoginPage> {
             backgroundColor: Colors.green,
           ),
         );
+        if (extractedRole == 'admin') {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const AdminPage()),
+            (route) => false,
+          );
+        } else if (extractedRole == 'specialist') {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const SpecialistPage()),
+            (route) => false,
+          );
+        } else if (extractedRole == 'volunteer') {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const VolunteerDashboard()),
+            (route) => false,
+          );
+        } else {
+          Navigator.pushAndRemoveUntil(
+            context,
+            MaterialPageRoute(builder: (context) => const ParentPage()),
+            (route) => false,
+          );
+        }
       } else {
-        final errorData = jsonDecode(response.body);
-        final errorMessage = errorData['message'] ?? 'Login failed';
-
+        if (!mounted) return;
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text(errorMessage), backgroundColor: Colors.red),
+          SnackBar(
+            content: Text(data['message'] ?? l10n.loginFailed),
+            backgroundColor: Colors.red,
+          ),
         );
       }
     } catch (e) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(l10n.loginFailed), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text('${l10n.loginFailed}: $e'),
+          backgroundColor: Colors.red,
+        ),
       );
     } finally {
       if (mounted) {
@@ -97,61 +141,71 @@ class _LoginPageState extends State<LoginPage> {
             key: _formKey,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Container(
-                  width: 130,
-                  height: 130,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.08),
-                        blurRadius: 15,
-                        spreadRadius: 2,
-                        offset: const Offset(0, 5),
+                // Beautifully designed circular logo section
+                Center(
+                  child: Container(
+                    width: 130,
+                    height: 130,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.08),
+                          blurRadius: 15,
+                          spreadRadius: 2,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                      border: Border.all(color: Colors.blue.shade50, width: 3),
+                    ),
+                    child: ClipOval(
+                      child: Image.asset(
+                        'assets/logo.png',
+                        fit: BoxFit.cover,
+                        errorBuilder: (context, error, stackTrace) {
+                          return Container(
+                            color: Colors.blue.shade50,
+                            child: const Icon(
+                              Icons.emoji_nature_rounded,
+                              size: 60,
+                              color: Colors.blue,
+                            ),
+                          );
+                        },
                       ),
-                    ],
-                    border: Border.all(color: Colors.blue.shade50, width: 3),
-                  ),
-                  child: ClipOval(
-                    child: Image.asset(
-                      'assets/logo.png',
-                      fit: BoxFit.cover,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          color: Colors.blue.shade50,
-                          child: const Icon(
-                            Icons.emoji_nature_rounded,
-                            size: 60,
-                            color: Colors.blue,
-                          ),
-                        );
-                      },
                     ),
                   ),
                 ),
                 const SizedBox(height: 24),
+
+                // Titles
                 Text(
-                  l10n.appTitle,
+                  l10n.login,
                   style: const TextStyle(
                     fontSize: 26,
                     fontWeight: FontWeight.bold,
+                    color: Colors.black,
                   ),
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  l10n.welcomeBack,
+                  l10n.welcomeBack, // Or localizations string for welcome message
                   style: const TextStyle(color: Colors.grey),
+                  textAlign: TextAlign.center,
                 ),
                 const SizedBox(height: 40),
 
-                // Email Field
+                // Styled Email Field
                 TextFormField(
                   controller: _emailController,
+                  keyboardType: TextInputType.emailAddress,
                   decoration: InputDecoration(
-                    hintText: l10n.hintEmail,
-                    labelText: l10n.email,
+                    hintText: 'Enter your email',
+                    labelText: l10n.emailLabel,
                     hintStyle: TextStyle(color: Colors.grey[400]),
                     prefixIcon: const Icon(
                       Icons.email_outlined,
@@ -166,21 +220,23 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty)
+                    if (value == null || value.isEmpty) {
                       return l10n.pleaseEnterEmail;
-                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value))
-                      return l10n.validEmail;
+                    }
+                    if (!RegExp(r'^[^@]+@[^@]+\.[^@]+').hasMatch(value)) {
+                      return 'Please enter a valid email';
+                    }
                     return null;
                   },
                 ),
                 const SizedBox(height: 20),
 
-                // Password Field
+                // Styled Password Field
                 TextFormField(
                   controller: _passwordController,
                   obscureText: true,
                   decoration: InputDecoration(
-                    hintText: l10n.hintPassword,
+                    hintText: 'Enter your password',
                     labelText: l10n.password,
                     hintStyle: const TextStyle(
                       letterSpacing: 2,
@@ -199,34 +255,38 @@ class _LoginPageState extends State<LoginPage> {
                     ),
                   ),
                   validator: (value) {
-                    if (value == null || value.isEmpty)
+                    if (value == null || value.isEmpty) {
                       return l10n.pleaseEnterPassword;
-                    if (value.length < 6) return l10n.passwordMinLength;
+                    }
+                    if (value.length < 6) {
+                      return 'Password must be at least 6 characters';
+                    }
                     return null;
                   },
                 ),
                 const SizedBox(height: 32),
 
-                // 2. Fixed: Wired up the submission action & handling progress indicator status
+                // Styled Submission Button
                 SizedBox(
-                  width: double.infinity,
+                  height: 50,
                   child: ElevatedButton(
                     onPressed: _isLoading ? null : _login,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.blue,
                       foregroundColor: Colors.white,
-                      padding: const EdgeInsets.symmetric(vertical: 16),
                       shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
                     child: _isLoading
-                        ? const SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(
-                              color: Colors.white,
-                              strokeWidth: 2,
+                        ? const Center(
+                            child: SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2,
+                              ),
                             ),
                           )
                         : Text(
@@ -239,6 +299,8 @@ class _LoginPageState extends State<LoginPage> {
                   ),
                 ),
                 const SizedBox(height: 24),
+
+                // Footer Register Switch Row
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
