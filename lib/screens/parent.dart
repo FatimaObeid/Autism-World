@@ -7,6 +7,7 @@ import 'package:autism_world/screens/childPage.dart';
 import 'package:autism_world/screens/parent/dailyProgress.dart';
 import 'package:autism_world/screens/parent/events.dart';
 import 'package:autism_world/screens/parent/resources.dart';
+import 'package:autism_world/screens/Parent/kidsZone.dart';
 import 'package:autism_world/settings/settings.dart';
 import 'package:autism_world/settings/settings_provider.dart';
 import 'package:flutter/material.dart';
@@ -29,7 +30,6 @@ class _ParentPageState extends State<ParentPage> {
   static const Color accentPurple = Color(0xFF9C27B0);
   static const Color accentTeal = Color(0xFF00897B);
 
-  // Runtime properties loaded from backend
   String _parentName = "";
   Map<String, dynamic>? _upcomingAppointment;
   bool _isLoadingDashboard = true;
@@ -46,7 +46,6 @@ class _ParentPageState extends State<ParentPage> {
     _fetchDashboardPayload();
   }
 
-  /// Request profile metadata and active booked appointments from ParentProfileController
   Future<void> _fetchDashboardPayload() async {
     try {
       final prefs = await SharedPreferences.getInstance();
@@ -90,10 +89,9 @@ class _ParentPageState extends State<ParentPage> {
     final textColor = isDark ? Colors.white : Colors.black87;
     final subtitleColor = isDark ? Colors.white70 : Colors.grey[600];
 
-    // Combine localization greeting with real backend parent name safely
-    final displayGreeting = _parentName.isNotEmpty
-        ? "${l10n.helloParent} $_parentName"
-        : l10n.helloParent;
+    String dynamicGreeting = _isLoadingDashboard
+        ? "..."
+        : (_parentName.isNotEmpty ? "Hello $_parentName 👋" : l10n.helloParent);
 
     return Scaffold(
       backgroundColor: backgroundColor,
@@ -111,14 +109,12 @@ class _ParentPageState extends State<ParentPage> {
             icon: Icon(Icons.notifications_none, color: subtitleColor),
           ),
           IconButton(
-            onPressed: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const SettingsPage(role: "Parent"),
-                ),
-              );
-            },
+            onPressed: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const SettingsPage(role: "Parent"),
+              ),
+            ),
             icon: Icon(Icons.settings, color: subtitleColor),
           ),
         ],
@@ -133,9 +129,8 @@ class _ParentPageState extends State<ParentPage> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                /// GREETING WITH REGISTERED NAME
                 Text(
-                  displayGreeting,
+                  dynamicGreeting,
                   style: TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -148,8 +143,6 @@ class _ParentPageState extends State<ParentPage> {
                   style: TextStyle(fontSize: 16, color: subtitleColor),
                 ),
                 const SizedBox(height: 25),
-
-                /// REAL BOOKED UPCOMING SECTION
                 Text(
                   l10n.upNext,
                   style: TextStyle(
@@ -159,7 +152,6 @@ class _ParentPageState extends State<ParentPage> {
                   ),
                 ),
                 const SizedBox(height: 10),
-
                 _isLoadingDashboard
                     ? const Center(
                         child: Padding(
@@ -168,14 +160,14 @@ class _ParentPageState extends State<ParentPage> {
                         ),
                       )
                     : _buildUpcomingCard(l10n, cardColor, textColor),
-
                 const SizedBox(height: 25),
 
-                /// CHILD PROFILE
                 _buildChildProfileCTA(context, l10n),
+                const SizedBox(height: 15),
+
+                _buildKidsZoneCTA(context), // Kids Zone Shortcut Card
                 const SizedBox(height: 30),
 
-                /// QUICK ACTIONS
                 Text(
                   l10n.quickActions,
                   style: TextStyle(
@@ -262,7 +254,6 @@ class _ParentPageState extends State<ParentPage> {
     );
   }
 
-  /// CHILD PROFILE CARD
   Widget _buildChildProfileCTA(BuildContext context, AppLocalizations l10n) {
     return InkWell(
       onTap: () => Navigator.push(
@@ -337,7 +328,87 @@ class _ParentPageState extends State<ParentPage> {
     );
   }
 
-  /// MENU CARD
+  Widget _buildKidsZoneCTA(BuildContext context) {
+    return InkWell(
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (context) => const KidsZonePage()),
+      ),
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          gradient: const LinearGradient(
+            colors: [Colors.orangeAccent, Colors.pinkAccent],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(20),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.pinkAccent.withOpacity(0.35),
+              blurRadius: 15,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(15),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.25),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.videogame_asset_rounded,
+                color: Colors.white,
+                size: 32,
+              ),
+            ),
+            const SizedBox(width: 15),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    "Kids Zone 🚀",
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 19,
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    "Switch to fun educational games and mini-activities",
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.9),
+                      fontSize: 13,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.celebration_rounded,
+                color: Colors.pinkAccent,
+                size: 18,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Widget _buildMenuCard(
     String title,
     IconData icon,
@@ -387,13 +458,11 @@ class _ParentPageState extends State<ParentPage> {
     );
   }
 
-  /// DYNAMIC UPCOMING CARD
   Widget _buildUpcomingCard(
     AppLocalizations l10n,
     Color cardColor,
     Color currentTextColor,
   ) {
-    // Graceful placeholder widget if the parent doesn't have an upcoming booked session row
     if (_upcomingAppointment == null) {
       return Container(
         width: double.infinity,
@@ -405,7 +474,11 @@ class _ParentPageState extends State<ParentPage> {
         ),
         child: Row(
           children: [
-            const Icon(Icons.calendar_today, color: Colors.blueGrey, size: 26),
+            const Icon(
+              Icons.calendar_today_outlined,
+              color: Colors.blueGrey,
+              size: 26,
+            ),
             const SizedBox(width: 15),
             Expanded(
               child: Text(
@@ -421,10 +494,7 @@ class _ParentPageState extends State<ParentPage> {
         ),
       );
     }
-
-    // Safely pull eager loaded relations (specialist -> user -> name) matching your model properties
     final typeString = _upcomingAppointment!['type'] ?? l10n.upcomingTherapy;
-
     String doctorName = l10n.upcomingDoctor;
     if (_upcomingAppointment!['specialist'] != null &&
         _upcomingAppointment!['specialist']['user'] != null) {
@@ -432,25 +502,21 @@ class _ParentPageState extends State<ParentPage> {
           _upcomingAppointment!['specialist']['user']['name'] ??
           l10n.upcomingDoctor;
     }
-
-    // Parse appointments timestamp
     final rawTimeStr = _upcomingAppointment!['appointment_time'];
     String formattedHour = "00:00";
     String formattedPeriod = "AM";
-
     if (rawTimeStr != null) {
       try {
         DateTime parsedDate = DateTime.parse(rawTimeStr.toString());
         formattedHour = DateFormat('hh:mm').format(parsedDate);
-        formattedPeriod = DateFormat('a').format(parsedDate); // AM or PM
+        formattedPeriod = DateFormat('a').format(parsedDate);
       } catch (_) {}
     }
-
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: const Color(0xFF00695C), // Opaque aesthetic teal
+        color: const Color(0xFF00695C),
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
@@ -514,4 +580,6 @@ class _ParentPageState extends State<ParentPage> {
       ),
     );
   }
+}
+
 }
