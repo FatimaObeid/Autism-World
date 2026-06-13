@@ -2,44 +2,39 @@ import 'dart:convert';
 import 'dart:io' show Platform;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:autism_world/l10n/app_localizations.dart';
 
-class BookAppointment extends StatefulWidget {
-  const BookAppointment({super.key});
+class ChildPage extends StatefulWidget {
+  const ChildPage({super.key});
 
   @override
-  State<BookAppointment> createState() => _BookAppointmentState();
+  State<ChildPage> createState() => _ChildPageState();
 }
 
-class _BookAppointmentState extends State<BookAppointment> {
-  static const Color primaryBlue = Color(0xFF1E88E5);
+class _ChildPageState extends State<ChildPage> {
   final _formKey = GlobalKey<FormState>();
 
-  // Text Editing Controllers
-  final TextEditingController _phoneController = TextEditingController();
+  // Optimized Parental Entry Fields
+  final _nameController = TextEditingController();
+  final _dobController = TextEditingController();
+  final _descriptionController = TextEditingController();
+  final _medicalDetailsController = TextEditingController();
+  final _importantNotesController = TextEditingController();
 
-  // Page Initialization & Loading States
+  String? _selectedGender;
+  String? _autismLevel;
+  bool _hasSevereCondition = false;
   bool _isLoading = false;
-  bool _isInitializing = true;
-  String? _errorMessage;
 
-  // Tracked Database Structural Context Information
-  int? parentProfileId;
-  String? automaticallySelectedChildId;
-  String? automaticallySelectedChildName;
-
-  // Selected Data Values for Database Dispatch
-  String? selectedSpecialistId;
-  String selectedCategory = "";
-  DateTime? selectedDate;
-  TimeOfDay? selectedTime;
-
-  // Runtime Data Collections
-  List<Map<String, dynamic>> allSpecialists = [];
-  List<Map<String, dynamic>> filteredSpecialists = [];
-  List<String> categories = [];
+  // Premium UI Theme Palette Colors
+  static const Color primaryBlue = Color(0xFF1E88E5);
+  static const Color lightBlueBg = Color(0xFFF0F7FF);
+  static const Color textDark = Color(0xFF0F172A);
+  static const Color textLight = Color(0xFF64748B);
+  static const Color surfaceCard = Color(0xFFFFFFFF);
 
   String get baseUrl {
     if (kIsWeb) return "http://127.0.0.1:8000";
@@ -47,192 +42,34 @@ class _BookAppointmentState extends State<BookAppointment> {
     return "http://127.0.0.1:8000";
   }
 
-  @override
-  void initState() {
-    super.initState();
-    _fetchInitialData();
-  }
-
-  @override
-  void dispose() {
-    _phoneController.dispose();
-    super.dispose();
-  }
-
-  Future<void> _fetchInitialData() async {
-    try {
-      final prefs = await SharedPreferences.getInstance();
-      final token = prefs.getString('auth_token') ?? '';
-
-      if (token.isEmpty) {
-        setState(() {
-          _errorMessage =
-              "Authentication token not found. Please log in again.";
-          _isInitializing = false;
-        });
-        return;
-      }
-
-      // API Endpoints
-      final childDashboardUri = Uri.parse("$baseUrl/api/children");
-      final parentDashboardUri = Uri.parse("$baseUrl/api/dashboard");
-      final specialistsUri = Uri.parse(
-        "$baseUrl/api/specialists",
-      ); // Fetching the real deal now
-
-      final headers = {
-        "Accept": "application/json",
-        "Authorization": "Bearer $token",
-      };
-
-      final childResponse = await http.get(childDashboardUri, headers: headers);
-      final parentResponse = await http.get(
-        parentDashboardUri,
-        headers: headers,
-      );
-      final specialistsResponse = await http.get(
-        specialistsUri,
-        headers: headers,
-      );
-
-      if (childResponse.statusCode == 200 &&
-          parentResponse.statusCode == 200 &&
-          specialistsResponse.statusCode == 200) {
-        final childData = jsonDecode(childResponse.body);
-        final parentData = jsonDecode(parentResponse.body);
-        final specialistsData = jsonDecode(specialistsResponse.body);
-
-        setState(() {
-          // 1. CAPTURE PARENT PROFILE ID CONTEXT
-          if (parentData['data'] != null &&
-              parentData['data']['parent_profile'] != null) {
-            parentProfileId = int.tryParse(
-              parentData['data']['parent_profile']['id'].toString(),
-            );
-          } else if (childData['data'] != null &&
-              childData['data']['parent_profile'] != null) {
-            parentProfileId = int.tryParse(
-              childData['data']['parent_profile']['id'].toString(),
-            );
-          } else {
-            // Fallback default safe value for sandbox simulation testing matching backend expectations
-            parentProfileId = parentData['user_id'] ?? 16;
-          }
-
-          // 2. AUTOMATICALLY ASSIGN AND BIND THE SINGLE CHILD DATA ROW
-          if (childData['success'] == true &&
-              childData['data'] != null &&
-              childData['data']['children'] != null) {
-            final List childrenList = childData['data']['children'];
-            if (childrenList.isNotEmpty) {
-              final singleChild = childrenList.first;
-              automaticallySelectedChildId = singleChild['id'].toString();
-              automaticallySelectedChildName =
-                  singleChild['full_name'] ?? 'Unnamed Profile Context';
-            }
-          }
-
-          // Dynamic Therapy Specialties categories
-          categories = [
-            "Speech Therapy",
-            "Behavioral Therapy",
-            "Occupational Therapy",
-            "Psychological Therapy",
-          ];
-          selectedCategory = categories.first;
-
-          // 3. PARSE DYNAMIC DATABASE SPECIALISTS RETURNED FROM LARAVEL ENDPOINT
-          if (specialistsData['success'] == true &&
-              specialistsData['specialists'] != null) {
-            final List rawSpecs = specialistsData['specialists'];
-            allSpecialists = rawSpecs.map<Map<String, dynamic>>((item) {
-              return {
-                "id": item['id'],
-                "specialization": item['therapy_type'] ?? "General Therapy",
-                "user": {
-                  "name": item['user']?['name'] ?? "Certified Specialist",
-                },
-              };
-            }).toList();
-          }
-
-          // Safety absolute fallback if your local DB specialists table is empty during testing
-          if (allSpecialists.isEmpty) {
-            allSpecialists = [
-              {
-                "id":
-                    1, // Ensure this ID actually exists in your DB before running!
-                "specialization": "Occupational Therapy",
-                "user": {"name": "Dr. Emily Watson (Sensory Integration)"},
-              },
-            ];
-          }
-
-          _filterSpecialistsByCategory(selectedCategory);
-          _isInitializing = false;
-        });
-      } else {
-        setState(() {
-          _errorMessage = "API Synchronization Error Code Mismatch.";
-          _isInitializing = false;
-        });
-      }
-    } catch (e) {
+  Future<void> _selectDate(BuildContext context) async {
+    final DateTime? picked = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now().subtract(const Duration(days: 365 * 4)),
+      firstDate: DateTime(2010),
+      lastDate: DateTime.now(),
+      builder: (context, child) {
+        return Theme(
+          data: Theme.of(context).copyWith(
+            colorScheme: const ColorScheme.light(
+              primary: primaryBlue,
+              onPrimary: Colors.white,
+              onSurface: textDark,
+            ),
+          ),
+          child: child!,
+        );
+      },
+    );
+    if (picked != null) {
       setState(() {
-        _errorMessage = "Network Integration Error: $e";
-        _isInitializing = false;
+        _dobController.text = DateFormat('yyyy-MM-dd').format(picked);
       });
     }
   }
 
-  void _filterSpecialistsByCategory(String category) {
-    setState(() {
-      filteredSpecialists = allSpecialists.where((spec) {
-        final String specType = (spec['specialization'] ?? '')
-            .toString()
-            .toLowerCase();
-        return specType.contains(category.toLowerCase());
-      }).toList();
-      selectedSpecialistId = null;
-    });
-  }
-
-  Future<void> _selectDate(BuildContext context) async {
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now().add(const Duration(days: 1)),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 90)),
-    );
-    if (picked != null) {
-      setState(() => selectedDate = picked);
-    }
-  }
-
-  Future<void> _selectTime(BuildContext context) async {
-    final TimeOfDay? picked = await showTimePicker(
-      context: context,
-      initialTime: const TimeOfDay(hour: 9, minute: 0),
-    );
-    if (picked != null) {
-      setState(() => selectedTime = picked);
-    }
-  }
-
-  Future<void> _submitAppointment() async {
-    if (!_formKey.currentState!.validate() ||
-        selectedDate == null ||
-        selectedTime == null ||
-        selectedSpecialistId == null) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            "Please completely fill out choices, phone, dates, and specialists.",
-          ),
-        ),
-      );
-      return;
-    }
+  Future<void> _saveProfile() async {
+    if (!_formKey.currentState!.validate()) return;
 
     setState(() => _isLoading = true);
 
@@ -240,59 +77,54 @@ class _BookAppointmentState extends State<BookAppointment> {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token') ?? '';
 
-      final String formattedDateTime =
-          "${selectedDate!.year.toString().padLeft(4, '0')}-${selectedDate!.month.toString().padLeft(2, '0')}-${selectedDate!.day.toString().padLeft(2, '0')} "
-          "${selectedTime!.hour.toString().padLeft(2, '0')}:${selectedTime!.minute.toString().padLeft(2, '0')}:00";
-
-      final Map<String, dynamic> requestPayload = {
-        "child_id": int.parse(
-          automaticallySelectedChildId ?? "4",
-        ), // Safely falls back if missing
-        "specialist_id": int.parse(selectedSpecialistId!),
-        "appointment_time": formattedDateTime,
-        "therapy_type": selectedCategory,
-        "phone": _phoneController.text.trim(),
-        "notes": "Requested via mobile app dashboard layout setup.",
-      };
-
       final response = await http.post(
-        Uri.parse("$baseUrl/api/appointments"),
+        Uri.parse("$baseUrl/api/children"),
         headers: {
           "Accept": "application/json",
           "Content-Type": "application/json",
           "Authorization": "Bearer $token",
         },
-        body: jsonEncode(requestPayload),
+        body: jsonEncode({
+          "full_name": _nameController.text.trim(),
+          "dob": _dobController.text.trim(),
+          "gender": _selectedGender,
+          "autism_level": _autismLevel,
+          "behavioral_description": _descriptionController.text.trim(),
+          "has_severe_condition": _hasSevereCondition,
+          "medical_details": _hasSevereCondition
+              ? _medicalDetailsController.text.trim()
+              : null,
+          "important_notes": _importantNotesController.text.trim(),
+        }),
       );
 
-      final responseData = jsonDecode(response.body);
+      final data = jsonDecode(response.body);
 
-      if (response.statusCode == 200 ||
-          response.statusCode == 201 ||
-          responseData['success'] == true) {
+      if (response.statusCode == 200 || response.statusCode == 201) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
-            backgroundColor: Colors.green,
-            content: Text("Appointment successfully reserved!"),
+            backgroundColor: Colors
+                .green, // Fixed: Changed from Colors.emerald to Colors.green
+            behavior: SnackBarBehavior.floating,
+            content: Text("Profile saved seamlessly!"),
           ),
         );
         Navigator.pop(context);
       } else {
-        String backError =
-            responseData['errors']?.toString() ??
-            responseData['message'] ??
-            "Rejected.";
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            backgroundColor: Colors.redAccent,
-            content: Text("Validation Failure: $backError"),
+            behavior: SnackBarBehavior.floating,
+            content: Text(data['message'] ?? "Failed to save profile data."),
           ),
         );
       }
     } catch (e) {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(SnackBar(content: Text("Transmission error failed: $e")));
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          behavior: SnackBarBehavior.floating,
+          content: Text("Connection Exception: $e"),
+        ),
+      );
     } finally {
       setState(() => _isLoading = false);
     }
@@ -302,306 +134,326 @@ class _BookAppointmentState extends State<BookAppointment> {
   Widget build(BuildContext context) {
     final l10n = AppLocalizations.of(context)!;
 
-    if (_isInitializing) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator(color: primaryBlue)),
-      );
-    }
-
     return Scaffold(
       backgroundColor: const Color(0xFFF8FAFC),
       appBar: AppBar(
         title: Text(
-          l10n.bookAppointmentTitle,
+          l10n.childProfileTitle,
           style: const TextStyle(
-            fontWeight: FontWeight.bold,
-            color: Color(0xFF0F172A),
+            color: textDark,
+            fontWeight: FontWeight.w700,
+            fontSize: 20,
           ),
         ),
         backgroundColor: Colors.white,
         elevation: 0,
-        foregroundColor: const Color(0xFF0F172A),
+        centerTitle: false,
+        foregroundColor: textDark,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20.0),
-        child: Form(
-          key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // 1. Child Display Box
-              _buildSectionTitle("Child Profile Context"),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: Row(
+      body: GestureDetector(
+        onTap: () => FocusScope.of(context).unfocus(),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+          child: Form(
+            key: _formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // SECTION 1: Identity & Demographics
+                _buildCardWrapper(
+                  title: "Personal Information",
+                  subtitle: "Basic profile identity records",
+                  icon: Icons.badge_outlined,
                   children: [
-                    const Icon(
-                      Icons.child_care_outlined,
-                      color: primaryBlue,
-                      size: 24,
+                    TextFormField(
+                      controller: _nameController,
+                      validator: (v) =>
+                          v!.isEmpty ? "Full name is required" : null,
+                      style: const TextStyle(color: textDark, fontSize: 15),
+                      decoration: _inputDecoration(
+                        label: l10n.childNameLabel,
+                        icon: Icons.person_outline,
+                      ),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            automaticallySelectedChildName ?? "hoh",
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF0F172A),
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          const Text(
-                            "Booking session for your registered profile",
-                            style: TextStyle(fontSize: 12, color: Colors.grey),
-                          ),
-                        ],
+                    const SizedBox(height: 18),
+                    TextFormField(
+                      controller: _dobController,
+                      readOnly: true,
+                      onTap: () => _selectDate(context),
+                      validator: (v) =>
+                          v!.isEmpty ? "Date of birth is required" : null,
+                      style: const TextStyle(color: textDark, fontSize: 15),
+                      decoration: _inputDecoration(
+                        label: l10n.childAge,
+                        icon: Icons.calendar_today_outlined,
+                        hint: "YYYY-MM-DD",
+                      ),
+                    ),
+                    const SizedBox(height: 18),
+                    DropdownButtonFormField<String>(
+                      value: _selectedGender,
+                      items: ["Male", "Female"]
+                          .map(
+                            (g) => DropdownMenuItem(value: g, child: Text(g)),
+                          )
+                          .toList(),
+                      onChanged: (v) => setState(() => _selectedGender = v),
+                      validator: (v) =>
+                          v == null ? "Gender selection is required" : null,
+                      dropdownColor: Colors.white,
+                      style: const TextStyle(color: textDark, fontSize: 15),
+                      decoration: _inputDecoration(
+                        label: "Gender",
+                        icon: Icons.wc_outlined,
                       ),
                     ),
                   ],
                 ),
-              ),
-              const SizedBox(height: 20),
 
-              // 2. Contact Phone Field
-              _buildSectionTitle("Parent Contact Phone Number"),
-              TextFormField(
-                controller: _phoneController,
-                keyboardType: TextInputType.phone,
-                style: const TextStyle(color: Color(0xFF0F172A), fontSize: 15),
-                decoration: _inputDecoration(
-                  Icons.phone_outlined,
-                ).copyWith(hintText: "Enter contact number for verification"),
-                validator: (value) {
-                  if (value == null || value.trim().isEmpty) {
-                    return "Phone number is explicitly required.";
-                  }
-                  return null;
-                },
-              ),
-              const SizedBox(height: 20),
+                const SizedBox(height: 20),
 
-              // 3. Therapy Category Selection
-              _buildSectionTitle("Therapy Category Specialization"),
-              DropdownButtonFormField<String>(
-                value: selectedCategory.isEmpty ? null : selectedCategory,
-                dropdownColor: Colors.white,
-                items: categories.map((cat) {
-                  return DropdownMenuItem<String>(
-                    value: cat,
-                    child: Text(
-                      cat,
-                      style: const TextStyle(
-                        color: Color(0xFF0F172A),
-                        fontSize: 15,
+                // SECTION 2: Health Conditions & Symptoms Tracking
+                _buildCardWrapper(
+                  title: "Development & Health Profile",
+                  subtitle: "Diagnostic spectrum overview metrics",
+                  icon: Icons.analytics_outlined,
+                  children: [
+                    DropdownButtonFormField<String>(
+                      value: _autismLevel,
+                      items: ["Level 1", "Level 2", "Level 3"]
+                          .map(
+                            (l) => DropdownMenuItem(value: l, child: Text(l)),
+                          )
+                          .toList(),
+                      onChanged: (v) => setState(() => _autismLevel = v),
+                      validator: (v) =>
+                          v == null ? "Please specify diagnostic level" : null,
+                      dropdownColor: Colors.white,
+                      style: const TextStyle(color: textDark, fontSize: 15),
+                      decoration: _inputDecoration(
+                        label: "Autism Spectrum Level",
+                        icon: Icons.psychology_outlined,
                       ),
                     ),
-                  );
-                }).toList(),
-                onChanged: (val) {
-                  if (val != null) {
-                    setState(() {
-                      selectedCategory = val;
-                      _filterSpecialistsByCategory(val);
-                    });
-                  }
-                },
-                decoration: _inputDecoration(Icons.category_outlined),
-              ),
-              const SizedBox(height: 20),
-
-              // 4. Certified Specialists Selection Matrix
-              _buildSectionTitle("Available Certified Specialists"),
-              filteredSpecialists.isEmpty
-                  ? const Padding(
-                      padding: EdgeInsets.symmetric(vertical: 8),
-                      child: Text(
-                        "No medical specialists found under this category on database.",
-                        style: TextStyle(color: Colors.grey, fontSize: 13),
-                      ),
-                    )
-                  : ListView.builder(
-                      shrinkWrap: true,
-                      physics: const NeverScrollableScrollPhysics(),
-                      itemCount: filteredSpecialists.length,
-                      itemBuilder: (context, index) {
-                        final spec = filteredSpecialists[index];
-                        final idStr = spec['id'].toString();
-                        final isSelected = selectedSpecialistId == idStr;
-                        final userProfile = spec['user'] ?? {};
-
-                        return GestureDetector(
-                          onTap: () =>
-                              setState(() => selectedSpecialistId = idStr),
-                          child: Container(
-                            margin: const EdgeInsets.only(bottom: 12),
-                            padding: const EdgeInsets.all(14),
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: isSelected
-                                    ? primaryBlue
-                                    : const Color(0xFFE2E8F0),
-                                width: isSelected ? 2 : 1,
-                              ),
-                            ),
-                            child: Row(
-                              children: [
-                                CircleAvatar(
-                                  backgroundColor: primaryBlue.withOpacity(0.1),
-                                  child: const Icon(
-                                    Icons.person,
-                                    color: primaryBlue,
-                                  ),
-                                ),
-                                const SizedBox(width: 14),
-                                Expanded(
-                                  child: Text(
-                                    userProfile['name'] ??
-                                        "Clinical Professional Row",
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 14,
-                                    ),
-                                  ),
-                                ),
-                                if (isSelected)
-                                  const Icon(
-                                    Icons.check_circle,
-                                    color: primaryBlue,
-                                  ),
-                              ],
-                            ),
-                          ),
-                        );
-                      },
-                    ),
-              const SizedBox(height: 20),
-
-              // 5. Timing Pickers
-              _buildSectionTitle("Schedule Session Timing & Date"),
-              Row(
-                children: [
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _selectDate(context),
-                      icon: const Icon(Icons.calendar_today, size: 18),
-                      label: Text(
-                        selectedDate == null
-                            ? "Select Date"
-                            : "${selectedDate!.year}-${selectedDate!.month.toString().padLeft(2, '0')}-${selectedDate!.day.toString().padLeft(2, '0')}",
-                      ),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        side: const BorderSide(color: Color(0xFFE2E8F0)),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
+                    const SizedBox(height: 18),
+                    TextFormField(
+                      controller: _descriptionController,
+                      maxLines: 3,
+                      style: const TextStyle(color: textDark, fontSize: 14),
+                      decoration: _inputDecoration(
+                        label: "Behavioral Characteristics / Traits",
+                        icon: Icons.description_outlined,
+                        hint:
+                            "Brief info regarding active triggers, behaviors, or preferences...",
                       ),
                     ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _selectTime(context),
-                      icon: const Icon(Icons.access_time, size: 18),
-                      label: Text(
-                        selectedTime == null
-                            ? "Select Time"
-                            : selectedTime!.format(context),
+                    const SizedBox(height: 12),
+                    Container(
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: const Color(0xFFE2E8F0)),
                       ),
-                      style: OutlinedButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        side: const BorderSide(color: Color(0xFFE2E8F0)),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 35),
-
-              // Submit Button
-              SizedBox(
-                width: double.infinity,
-                height: 52,
-                child: ElevatedButton(
-                  onPressed: _isLoading ? null : _submitAppointment,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryBlue,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(14),
-                    ),
-                    elevation: 0,
-                  ),
-                  child: _isLoading
-                      ? const CircularProgressIndicator(color: Colors.white)
-                      : Text(
-                          l10n.bookAppointmentTitle,
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
+                      child: SwitchListTile(
+                        title: const Text(
+                          "Additional Medical Conditions",
+                          style: TextStyle(
+                            fontWeight: FontWeight.w600,
+                            color: textDark,
+                            fontSize: 14,
                           ),
                         ),
+                        subtitle: const Text(
+                          "Does the child experience other medical complexities?",
+                          style: TextStyle(fontSize: 12, color: textLight),
+                        ),
+                        value: _hasSevereCondition,
+                        activeColor: primaryBlue,
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 14,
+                          vertical: 4,
+                        ),
+                        onChanged: (v) =>
+                            setState(() => _hasSevereCondition = v),
+                      ),
+                    ),
+                    if (_hasSevereCondition) ...[
+                      const SizedBox(height: 18),
+                      TextFormField(
+                        controller: _medicalDetailsController,
+                        maxLines: 2,
+                        validator: (v) => (_hasSevereCondition && v!.isEmpty)
+                            ? "Medical tracking info details are required"
+                            : null,
+                        style: const TextStyle(color: textDark, fontSize: 14),
+                        decoration: _inputDecoration(
+                          label: "Specific Medical Details",
+                          icon: Icons.medical_services_outlined,
+                        ),
+                      ),
+                    ],
+                    const SizedBox(height: 18),
+                    TextFormField(
+                      controller: _importantNotesController,
+                      maxLines: 2,
+                      style: const TextStyle(color: textDark, fontSize: 14),
+                      decoration: _inputDecoration(
+                        label: "Notes for the Specialist",
+                        icon: Icons.rate_review_outlined,
+                        hint:
+                            "Anything specific you want to communicate or address...",
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
+
+                const SizedBox(height: 32),
+
+                // SUBMIT ACTION BUTTON
+                SizedBox(
+                  width: double.infinity,
+                  height: 54,
+                  child: ElevatedButton(
+                    onPressed: _isLoading ? null : _saveProfile,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: primaryBlue,
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: _isLoading
+                        ? const SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2.5,
+                            ),
+                          )
+                        : Text(
+                            l10n.saveChildProfile,
+                            style: const TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.3,
+                            ),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 30),
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 
-  Widget _buildSectionTitle(String title) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 8.0, left: 2),
-      child: Text(
-        title,
-        style: const TextStyle(
-          fontWeight: FontWeight.bold,
-          fontSize: 14,
-          color: Color(0xFF334155),
-        ),
+  Widget _buildCardWrapper({
+    required String title,
+    required String subtitle,
+    required IconData icon,
+    required List<Widget> children,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: surfaceCard,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(
+              0xFF0F172A,
+            ).withOpacity(0.04), // Fixed syntax issue here
+            blurRadius: 16,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: lightBlueBg,
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Icon(icon, color: primaryBlue, size: 20),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: textDark,
+                      ),
+                    ),
+                    const SizedBox(height: 1),
+                    Text(
+                      subtitle,
+                      style: const TextStyle(fontSize: 12, color: textLight),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const Padding(
+            padding: EdgeInsets.symmetric(vertical: 16),
+            child: Divider(color: Color(0xFFF1F5F9), thickness: 1.2, height: 1),
+          ),
+          ...children,
+        ],
       ),
     );
   }
 
-  InputDecoration _inputDecoration(IconData icon) {
+  InputDecoration _inputDecoration({
+    required String label,
+    required IconData icon,
+    String? hint,
+  }) {
     return InputDecoration(
-      prefixIcon: Icon(icon, color: Colors.grey[500], size: 20),
-      filled: true,
-      fillColor: Colors.white,
-      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      labelText: label,
+      labelStyle: const TextStyle(
+        color: textLight,
+        fontSize: 13,
+        fontWeight: FontWeight.w500,
+      ),
+      hintText: hint,
+      hintStyle: const TextStyle(color: Color(0xFF94A3B8), fontSize: 13),
+      prefixIcon: Icon(icon, color: textLight, size: 20),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Color(0xFFE2E8F0)),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Color(0xFFE2E8F0), width: 1.2),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         borderSide: const BorderSide(color: primaryBlue, width: 1.5),
       ),
       errorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
-        borderSide: const BorderSide(color: Colors.redAccent, width: 1),
+        borderRadius: BorderRadius.circular(14),
+        borderSide: const BorderSide(color: Colors.redAccent, width: 1.2),
       ),
       focusedErrorBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(14),
         borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
       ),
+      filled: true,
+      fillColor: const Color(0xFFFAFAFA),
     );
   }
 }
-}
+
