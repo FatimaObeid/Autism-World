@@ -171,7 +171,7 @@ class _ChildPageState extends State<ChildPage> {
                           v!.isEmpty ? "Full name is required" : null,
                       style: const TextStyle(color: textDark, fontSize: 15),
                       decoration: _inputDecoration(
-                        label: l10n.childNameLabel,
+                        label: l10n.childFullName,
                         icon: Icons.person_outline,
                       ),
                     ),
@@ -184,7 +184,7 @@ class _ChildPageState extends State<ChildPage> {
                           v!.isEmpty ? "Date of birth is required" : null,
                       style: const TextStyle(color: textDark, fontSize: 15),
                       decoration: _inputDecoration(
-                        label: l10n.childAge,
+                        label: l10n.birthDate,
                         icon: Icons.calendar_today_outlined,
                         hint: "YYYY-MM-DD",
                       ),
