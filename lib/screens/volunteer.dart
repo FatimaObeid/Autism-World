@@ -377,7 +377,9 @@ class _VolunteerDashboardState extends State<VolunteerDashboard> {
                           indicatorColor: Colors.transparent,
                           indicatorSize: TabBarIndicatorSize.tab,
                           labelColor: primaryBlue,
-                          labelStyle: const TextStyle(fontWeight: FontWeight.bold),
+                          labelStyle: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                          ),
                           unselectedLabelColor: subtitleColor,
                           dividerColor: Colors.transparent,
                           tabs: [
@@ -508,6 +510,7 @@ class _VolunteerDashboardState extends State<VolunteerDashboard> {
     final String ageGroup = item['age_group'] ?? '';
     final String dateStr = item['date'] ?? '';
     final String timeStr = item['workshop_time'] ?? '';
+    final String targetAudience = item['target_audience'] ?? '';
     final String rawStatus = item['status'] ?? 'pending';
 
     final bool isApproved = rawStatus.toLowerCase() == 'approved';
@@ -517,7 +520,12 @@ class _VolunteerDashboardState extends State<VolunteerDashboard> {
       decoration: BoxDecoration(
         color: cardColor,
         borderRadius: BorderRadius.circular(20),
-        border: Border(left: BorderSide(color: isApproved ? accentGreen : accentOrange, width: 5)),
+        border: Border(
+          left: BorderSide(
+            color: isApproved ? accentGreen : accentOrange,
+            width: 5,
+          ),
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.04),
@@ -543,8 +551,12 @@ class _VolunteerDashboardState extends State<VolunteerDashboard> {
               ),
               const SizedBox(height: 4),
               Text(location, style: TextStyle(color: subtitleColor)),
+              if (ageGroup.trim().isNotEmpty) ...[
+                const SizedBox(height: 4),
+                Text(ageGroup, style: TextStyle(color: subtitleColor)),
+              ],
               const SizedBox(height: 4),
-              Text(ageGroup, style: TextStyle(color: subtitleColor)),
+              Text(targetAudience, style: TextStyle(color: subtitleColor)),
             ],
           ),
         ),
@@ -578,6 +590,7 @@ class _VolunteerDashboardState extends State<VolunteerDashboard> {
     final ageController = TextEditingController();
     final dateController = TextEditingController();
     final timeController = TextEditingController();
+    final targetAudienceController = TextEditingController();
 
     showModalBottomSheet(
       context: context,
@@ -674,9 +687,9 @@ class _VolunteerDashboardState extends State<VolunteerDashboard> {
                   ),
                   const SizedBox(height: 12),
                   TextFormField(
-                    controller: ageController,
+                    controller: targetAudienceController,
                     decoration: InputDecoration(
-                      labelText: "${l10n.ageGroup} (e.g. Kids 8-12)",
+                      labelText: l10n.targetAudience,
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
@@ -684,6 +697,17 @@ class _VolunteerDashboardState extends State<VolunteerDashboard> {
                     validator: (v) =>
                         v == null || v.trim().isEmpty ? 'Required field' : null,
                   ),
+                  const SizedBox(height: 12),
+                  TextFormField(
+                    controller: ageController,
+                    decoration: InputDecoration(
+                      labelText: "${l10n.ageGroup} (e.g. Kids 8-12)",
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                  ),
+
                   const SizedBox(height: 12),
                   TextFormField(
                     controller: locationController,
@@ -717,6 +741,8 @@ class _VolunteerDashboardState extends State<VolunteerDashboard> {
                             "workshop_time": timeController.text.trim(),
                             "age_group": ageController.text.trim(),
                             "location": locationController.text.trim(),
+                            "target_audience": targetAudienceController.text
+                                .trim(),
                           });
                         }
                       },
@@ -733,3 +759,4 @@ class _VolunteerDashboardState extends State<VolunteerDashboard> {
     );
   }
 }
+
