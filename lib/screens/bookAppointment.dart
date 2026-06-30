@@ -74,10 +74,10 @@ class _BookAppointmentState extends State<BookAppointment> {
       }
 
       // API Endpoints
-      final childDashboardUri = Uri.parse("$baseUrl/api/children");
-      final parentDashboardUri = Uri.parse("$baseUrl/api/dashboard");
+      final childDashboardUri = Uri.parse("$baseUrl/api/parent/children");
+      final parentDashboardUri = Uri.parse("$baseUrl/api/parent/dashboard");
       final specialistsUri = Uri.parse(
-        "$baseUrl/api/specialists",
+        "$baseUrl/api/parent/specialists",
       ); // Fetching the real deal now
 
       final headers = {
@@ -256,7 +256,7 @@ class _BookAppointmentState extends State<BookAppointment> {
       };
 
       final response = await http.post(
-        Uri.parse("$baseUrl/api/appointments"),
+        Uri.parse("$baseUrl/api/parent/appointments"),
         headers: {
           "Accept": "application/json",
           "Content-Type": "application/json",
