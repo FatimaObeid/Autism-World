@@ -1,5 +1,8 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:autism_world/l10n/app_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class UpcomingAppointmentsPage extends StatefulWidget {
   const UpcomingAppointmentsPage({super.key});
@@ -21,40 +24,86 @@ class _UpcomingAppointmentsPageState extends State<UpcomingAppointmentsPage> {
   static const _colorConsultation = Colors.orange;
   static const _colorFollowUp = Colors.purple;
 
-  final List<Map<String, String>> _upcomingAppointments = [
-    {
-      'name': 'Lina Kate',
-      'time': '09:00 AM',
-      'date': 'Mon, 12 Feb',
-      'tagKey': 'Therapy',
-    },
-    {
-      'name': 'Ahmed Ali',
-      'time': '11:30 AM',
-      'date': 'Mon, 12 Feb',
-      'tagKey': 'Check-up',
-    },
-    {
-      'name': 'John Doe',
-      'time': '02:00 PM',
-      'date': 'Tue, 13 Feb',
-      'tagKey': 'Consultation',
-    },
-    {
-      'name': 'Sarah Smith',
-      'time': '04:00 PM',
-      'date': 'Wed, 14 Feb',
-      'tagKey': 'Follow-up',
-    },
-  ];
+  // --- State Variables ---
+  List<Map<String, dynamic>> _upcomingAppointments = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchAppointments();
+  }
+
+  Future<void> _fetchAppointments() async {
+    const String baseUrl = 'http://127.0.0.1:8000';
+    final url = Uri.parse('$baseUrl/api/specialist/upcoming-appointments');
+
+    try {
+      setState(() {
+        _isLoading = true;
+        _errorMessage = null;
+      });
+      Future<String?> _getToken() async {
+        SharedPreferences prefs = await SharedPreferences.getInstance();
+        return prefs.getString('auth_token');
+      }
+
+      final token = await _getToken();
+
+      final response = await http.get(
+        url,
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = json.decode(response.body);
+        if (responseData['success'] == true) {
+          setState(() {
+            _upcomingAppointments = List<Map<String, dynamic>>.from(
+              responseData['upcoming_appointments'],
+            );
+            _isLoading = false;
+          });
+        } else {
+          setState(() {
+            _errorMessage =
+                'Failed to load appointments processing backend logic';
+            _isLoading = false;
+          });
+        }
+      } else if (response.statusCode == 401) {
+        setState(() {
+          _errorMessage = 'Unauthorized. Please log in again.';
+          _isLoading = false;
+        });
+      } else {
+        setState(() {
+          _errorMessage = 'Server error: ${response.statusCode}';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Connection failed: $e';
+        _isLoading = false;
+      });
+    }
+  }
 
   String _getTagText(String key, AppLocalizations l10n) {
-    switch (key) {
-      case 'Therapy':
+    switch (key.toLowerCase()) {
+      case 'therapy':
+      case 'therapy_session':
         return l10n.tagTherapy;
-      case 'Check-up':
+      case 'check-up':
+      case 'checkup':
         return l10n.tagCheckup;
-      case 'Consultation':
+      case 'consultation':
         return l10n.tagConsultation;
       default:
         return l10n.tagFollowup;
@@ -62,12 +111,14 @@ class _UpcomingAppointmentsPageState extends State<UpcomingAppointmentsPage> {
   }
 
   Color _getTagColor(String key) {
-    switch (key) {
-      case 'Therapy':
+    switch (key.toLowerCase()) {
+      case 'therapy':
+      case 'therapy_session':
         return _colorTherapy;
-      case 'Check-up':
+      case 'check-up':
+      case 'checkup':
         return _colorCheckup;
-      case 'Consultation':
+      case 'consultation':
         return _colorConsultation;
       default:
         return _colorFollowUp;
@@ -92,16 +143,81 @@ class _UpcomingAppointmentsPageState extends State<UpcomingAppointmentsPage> {
           ),
         ),
       ),
-      body: ListView.builder(
+      body: _buildBody(l10n),
+    );
+  }
+
+  Widget _buildBody(AppLocalizations l10n) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
+
+    if (_errorMessage != null) {
+      return Center(
+        child: Padding(
+          padding: const EdgeInsets.all(20.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                _errorMessage!,
+                style: const TextStyle(color: Colors.red, fontSize: 14),
+              ),
+              const SizedBox(height: 16),
+              ElevatedButton(
+                onPressed: _fetchAppointments,
+                child: const Text('Retry'),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    if (_upcomingAppointments.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: _fetchAppointments,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: const [
+            SizedBox(height: 100),
+            Center(
+              child: Text(
+                'No upcoming appointments found.',
+                style: TextStyle(color: _textSecondary, fontSize: 15),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _fetchAppointments,
+      child: ListView.builder(
         padding: const EdgeInsets.all(20),
         itemCount: _upcomingAppointments.length,
         itemBuilder: (context, index) {
           final appointment = _upcomingAppointments[index];
-          final dateParts = appointment['date']!.split(',');
-          final day = dateParts[0];
-          final monthDay = dateParts[1].trim();
 
-          final tagColor = _getTagColor(appointment['tagKey']!);
+          // Safely extracts fields matching backend mapping format
+          final String childName = appointment['child_name'] ?? 'Unknown Child';
+          final String sessionType = appointment['session_type'] ?? 'Therapy';
+          final String appointmentTime = appointment['time'] ?? '00:00 AM';
+          final String rawDate = appointment['date'] ?? 'Mon 12 Feb';
+
+          // Parsed date format: "D d M" (e.g., "Mon 12 Feb")
+          String day = 'Day';
+          String monthDay = 'Date';
+          final dateParts = rawDate.split(' ');
+          if (dateParts.length >= 3) {
+            day = dateParts[0]; // "Mon"
+            monthDay = "${dateParts[1]} ${dateParts[2]}"; // "12 Feb"
+          } else {
+            monthDay = rawDate;
+          }
+
+          final tagColor = _getTagColor(sessionType);
 
           return Container(
             margin: const EdgeInsets.only(bottom: 16),
@@ -139,7 +255,7 @@ class _UpcomingAppointmentsPageState extends State<UpcomingAppointmentsPage> {
                         monthDay,
                         style: const TextStyle(
                           color: _colorCheckup,
-                          fontSize: 18,
+                          fontSize: 15,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -152,7 +268,7 @@ class _UpcomingAppointmentsPageState extends State<UpcomingAppointmentsPage> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        appointment['name']!,
+                        childName,
                         style: const TextStyle(
                           fontWeight: FontWeight.bold,
                           fontSize: 16,
@@ -168,7 +284,7 @@ class _UpcomingAppointmentsPageState extends State<UpcomingAppointmentsPage> {
                           ),
                           const SizedBox(width: 4),
                           Text(
-                            appointment['time']!,
+                            appointmentTime,
                             style: const TextStyle(
                               color: _textSecondary,
                               fontSize: 13,
@@ -189,7 +305,7 @@ class _UpcomingAppointmentsPageState extends State<UpcomingAppointmentsPage> {
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    _getTagText(appointment['tagKey']!, l10n),
+                    _getTagText(sessionType, l10n),
                     style: TextStyle(
                       color: tagColor,
                       fontSize: 12,
@@ -205,3 +321,4 @@ class _UpcomingAppointmentsPageState extends State<UpcomingAppointmentsPage> {
     );
   }
 }
+
