@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import 'package:autism_world/l10n/app_localizations.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class CommunityEventsPage extends StatefulWidget {
   const CommunityEventsPage({super.key});
@@ -14,49 +17,139 @@ class _CommunityEventsPageState extends State<CommunityEventsPage> {
   static const _cardColor = Colors.white;
   static const _textPrimary = Colors.black;
   static const _textSecondary = Colors.grey;
-  static const _tealColor = Colors.teal; // Matches the dashboard button color
+  static const _tealColor = Colors.teal; // Matches dashboard button color
   static const _successColor = Colors.green;
 
-  final List<Map<String, dynamic>> _events = [
-    {
-      "title": "🧠 Advanced CBT Training",
-      "date": "Feb 28",
-      "time": "09:00 AM",
-      "location": "Medical Center",
-      "categoryKey": "Training",
-      "joined": true,
-    },
-    {
-      "title": "🤝 Clinical Supervision",
-      "date": "Mar 05",
-      "time": "02:00 PM",
-      "location": "Zoom / Virtual",
-      "categoryKey": "Peer Review",
-      "joined": false,
-    },
-    {
-      "title": "📜 Autism Symposium",
-      "date": "Mar 12",
-      "time": "08:30 AM",
-      "location": "Grand Hotel",
-      "categoryKey": "Conference",
-      "joined": false,
-    },
-  ];
+  final String _baseUrl = 'http://127.0.0.1:8000/api/specialist';
 
-  void _toggleJoin(Map<String, dynamic> event, AppLocalizations l10n) {
+  List<Map<String, dynamic>> _events = [];
+  bool _isLoading = true;
+  String? _errorMessage;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchEvents();
+  }
+
+  Future<String?> _getToken() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getString('auth_token');
+  }
+
+  Future<void> _fetchEvents() async {
     setState(() {
-      event['joined'] = !event['joined'];
+      _isLoading = true;
+      _errorMessage = null;
     });
-    bool nowJoined = event['joined'];
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          nowJoined ? l10n.seatReserved : l10n.reservationCancelled,
-        ),
-        backgroundColor: nowJoined ? _tealColor : _successColor,
-      ),
-    );
+
+    try {
+      final token = await _getToken();
+      final response = await http.get(
+        Uri.parse('$_baseUrl/events'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final Map<String, dynamic> responseData = json.decode(response.body);
+        if (responseData['success'] == true) {
+          setState(() {
+            _events = List<Map<String, dynamic>>.from(responseData['events']);
+            _isLoading = false;
+          });
+        } else {
+          setState(() {
+            _errorMessage = 'Failed to load events';
+            _isLoading = false;
+          });
+        }
+      } else {
+        setState(() {
+          _errorMessage = 'Server error: ${response.statusCode}';
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = 'Connection error. Check your server settings.';
+        _isLoading = false;
+      });
+    }
+  }
+
+  // POST / DELETE: Register or unregister from event using endpoints in api.php
+  Future<void> _toggleJoin(
+    Map<String, dynamic> event,
+    AppLocalizations l10n,
+  ) async {
+    final bool originalState = event['is_registered'] ?? false;
+    final int eventId = event['id'];
+
+    // Optimistic UI Update: updates right away for fluid UX responsiveness
+    setState(() {
+      event['is_registered'] = !originalState;
+    });
+
+    final String url = originalState
+        ? '$_baseUrl/events/$eventId/unregister'
+        : '$_baseUrl/events/$eventId/register';
+
+    try {
+      final http.Response response = originalState
+          ? await http.delete(
+              Uri.parse(url),
+              headers: {'Accept': 'application/json'},
+            )
+          : await http.post(
+              Uri.parse(url),
+              headers: {'Accept': 'application/json'},
+            );
+
+      final Map<String, dynamic> responseData = json.decode(response.body);
+
+      if (response.statusCode == 200 && responseData['success'] == true) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                event['is_registered']
+                    ? l10n.seatReserved
+                    : l10n.reservationCancelled,
+              ),
+              backgroundColor: event['is_registered']
+                  ? _tealColor
+                  : _successColor,
+            ),
+          );
+        }
+      } else {
+        // Fallback: Backend failed/declined operation, revert state
+        setState(() {
+          event['is_registered'] = originalState;
+        });
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(responseData['message'] ?? 'An error occurred.'),
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      // Fallback: Connection drop, revert state
+      setState(() {
+        event['is_registered'] = originalState;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Network error. Operation failed.')),
+        );
+      }
+    }
   }
 
   @override
@@ -66,7 +159,7 @@ class _CommunityEventsPageState extends State<CommunityEventsPage> {
     return Scaffold(
       backgroundColor: _bgColor,
       appBar: AppBar(
-        backgroundColor: _bgColor, // Unified with other pages
+        backgroundColor: _bgColor,
         elevation: 0,
         iconTheme: const IconThemeData(color: _textPrimary),
         title: Text(
@@ -77,11 +170,63 @@ class _CommunityEventsPageState extends State<CommunityEventsPage> {
             color: _textPrimary,
           ),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: _textPrimary),
+            onPressed: _fetchEvents,
+          ),
+        ],
       ),
-      body: ListView.builder(
-        padding: const EdgeInsets.all(
-          20,
-        ), // Matches UpcomingAppointments padding
+      body: _buildBody(l10n),
+    );
+  }
+
+  Widget _buildBody(AppLocalizations l10n) {
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator(color: _tealColor));
+    }
+
+    if (_errorMessage != null) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
+            const SizedBox(height: 12),
+            ElevatedButton(
+              onPressed: _fetchEvents,
+              style: ElevatedButton.styleFrom(backgroundColor: _tealColor),
+              child: const Text('Retry', style: TextStyle(color: Colors.white)),
+            ),
+          ],
+        ),
+      );
+    }
+
+    if (_events.isEmpty) {
+      return RefreshIndicator(
+        onRefresh: _fetchEvents,
+        color: _tealColor,
+        child: ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          children: const [
+            SizedBox(height: 100),
+            Center(
+              child: Text(
+                'No upcoming events available.',
+                style: TextStyle(color: _textSecondary, fontSize: 16),
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return RefreshIndicator(
+      onRefresh: _fetchEvents,
+      color: _tealColor,
+      child: ListView.builder(
+        padding: const EdgeInsets.all(20),
         itemCount: _events.length,
         itemBuilder: (context, index) {
           return _buildCard(_events[index], l10n);
@@ -91,10 +236,12 @@ class _CommunityEventsPageState extends State<CommunityEventsPage> {
   }
 
   Widget _buildCard(Map<String, dynamic> item, AppLocalizations l10n) {
-    bool isJoined = item['joined'];
+    bool isJoined = item['is_registered'] ?? false;
+    String categoryKey = item['category'] ?? '';
     String category;
 
-    switch (item['categoryKey']) {
+    // Mapping based on category values from your backend
+    switch (categoryKey) {
       case 'Training':
         category = l10n.categoryTraining;
         break;
@@ -102,18 +249,20 @@ class _CommunityEventsPageState extends State<CommunityEventsPage> {
         category = l10n.categoryPeerReview;
         break;
       default:
-        category = l10n.categoryConference;
+        category = categoryKey.isNotEmpty
+            ? categoryKey
+            : l10n.categoryConference;
     }
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: _cardColor,
-        borderRadius: BorderRadius.circular(16), // Unified border radius
-        border: Border.all(color: Colors.grey.shade200), // Unified border
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(color: Colors.grey.withOpacity(0.05), blurRadius: 10),
-        ], // Unified shadow
+        ],
       ),
       child: ClipRRect(
         borderRadius: BorderRadius.circular(16),
@@ -129,7 +278,6 @@ class _CommunityEventsPageState extends State<CommunityEventsPage> {
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    // Unified Tag Style
                     Container(
                       padding: const EdgeInsets.symmetric(
                         horizontal: 10,
@@ -149,7 +297,8 @@ class _CommunityEventsPageState extends State<CommunityEventsPage> {
                       ),
                     ),
                     Text(
-                      item['date'],
+                      item['date'] ??
+                          '', // Expects string layout formatted by controller map
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         color: _textSecondary,
@@ -159,13 +308,23 @@ class _CommunityEventsPageState extends State<CommunityEventsPage> {
                 ),
                 const SizedBox(height: 12),
                 Text(
-                  item['title'],
+                  item['title'] ?? '',
                   style: const TextStyle(
                     fontSize: 18,
                     fontWeight: FontWeight.bold,
                     color: _textPrimary,
                   ),
                 ),
+                if (item['description'] != null &&
+                    item['description'].toString().isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  Text(
+                    item['description'],
+                    style: const TextStyle(color: _textSecondary, fontSize: 14),
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ],
                 const SizedBox(height: 12),
                 Row(
                   children: [
@@ -175,11 +334,14 @@ class _CommunityEventsPageState extends State<CommunityEventsPage> {
                       color: _textSecondary,
                     ),
                     const SizedBox(width: 4),
-                    Text(
-                      item['location'],
-                      style: const TextStyle(
-                        color: _textSecondary,
-                        fontSize: 13,
+                    Expanded(
+                      child: Text(
+                        item['location'] ?? '',
+                        style: const TextStyle(
+                          color: _textSecondary,
+                          fontSize: 13,
+                        ),
+                        overflow: TextOverflow.ellipsis,
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -190,7 +352,8 @@ class _CommunityEventsPageState extends State<CommunityEventsPage> {
                     ),
                     const SizedBox(width: 4),
                     Text(
-                      item['time'],
+                      item['time'] ??
+                          '', // Expects string layout formatted by controller map
                       style: const TextStyle(
                         color: _textSecondary,
                         fontSize: 13,
