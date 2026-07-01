@@ -1,5 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:autism_world/l10n/app_localizations.dart';
+import 'dart:convert';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart'; // Using SharedPreferences
 
 class PendingRequestsPage extends StatefulWidget {
   const PendingRequestsPage({super.key});
@@ -9,42 +12,121 @@ class PendingRequestsPage extends StatefulWidget {
 }
 
 class _PendingRequestsPageState extends State<PendingRequestsPage> {
-  final List<Map<String, String>> _pendingAppointments = [
-    {
-      'name': 'Sarah Smith',
-      'type': 'Initial Consultation',
-      'time': '10:00 AM',
-      'date': 'Today',
-    },
-    {
-      'name': 'Mike Johnson',
-      'type': 'Follow-up',
-      'time': '2:30 PM',
-      'date': 'Tomorrow',
-    },
-    {
-      'name': 'Emily Davis',
-      'type': 'Therapy Session',
-      'time': '09:15 AM',
-      'date': 'Mon, 12 Feb',
-    },
-  ];
+  final String baseUrl = 'http://127.0.0.1:8000';
 
-  void _handleRequest(int index, bool isAccepted, AppLocalizations l10n) {
-    String patientName = _pendingAppointments[index]['name']!;
-    setState(() {
-      _pendingAppointments.removeAt(index);
-    });
+  List<dynamic> _pendingAppointments = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchPendingRequests();
+  }
+
+  // Your exact token retrieval method
+  Future<String?> _getToken() async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getString('auth_token');
+  }
+
+  // 1. Fetching the pending requests matching Route::get('/pendingRequests')
+  Future<void> _fetchPendingRequests() async {
+    setState(() => _isLoading = true);
+    try {
+      final token = await _getToken();
+
+      if (token == null) {
+        setState(() => _isLoading = false);
+        _showErrorSnackBar('Authentication error: Token not found.');
+        return;
+      }
+
+      final response = await http.get(
+        Uri.parse('$baseUrl/api/specialist/pendingRequests'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          setState(() {
+            _pendingAppointments = data['pending_requests'] ?? [];
+            _isLoading = false;
+          });
+        }
+      } else {
+        throw Exception('Failed to load requests');
+      }
+    } catch (e) {
+      setState(() => _isLoading = false);
+      _showErrorSnackBar('Error connecting to server');
+    }
+  }
+
+  Future<void> _handleRequest(
+    int index,
+    bool isAccepted,
+    AppLocalizations l10n,
+  ) async {
+    final appointment = _pendingAppointments[index];
+    final int appointmentId = appointment['id'];
+    final String parentName = appointment['parent_name'] ?? 'Parent';
+
+    final endpoint = isAccepted
+        ? '$baseUrl/api/specialist/appointments/$appointmentId/confirm'
+        : '$baseUrl/api/specialist/appointments/$appointmentId/decline';
+
+    try {
+      // Await the token here as well
+      final token = await _getToken();
+      if (token == null) {
+        _showErrorSnackBar('Authentication error: Token not found.');
+        return;
+      }
+
+      final response = await http.post(
+        Uri.parse(endpoint),
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+          'Authorization': 'Bearer $token', // Injected token safely here
+        },
+      );
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        if (data['success'] == true) {
+          setState(() {
+            _pendingAppointments.removeAt(index);
+          });
+
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                isAccepted
+                    ? l10n.acceptedRequest(parentName)
+                    : l10n.declinedRequest(parentName),
+              ),
+              backgroundColor: isAccepted ? Colors.green : Colors.red,
+              duration: const Duration(seconds: 2),
+            ),
+          );
+        }
+      } else {
+        _showErrorSnackBar('Failed to update request status on server.');
+      }
+    } catch (e) {
+      _showErrorSnackBar('Network error. Please try again.');
+    }
+  }
+
+  void _showErrorSnackBar(String message) {
     ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text(
-          isAccepted
-              ? l10n.acceptedRequest(patientName)
-              : l10n.declinedRequest(patientName),
-        ),
-        backgroundColor: isAccepted ? Colors.green : Colors.red,
-        duration: const Duration(seconds: 2),
-      ),
+      SnackBar(content: Text(message), backgroundColor: Colors.red),
     );
   }
 
@@ -62,26 +144,39 @@ class _PendingRequestsPageState extends State<PendingRequestsPage> {
           ),
         ),
         backgroundColor: Colors.white,
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.refresh, color: Colors.black),
+            onPressed: _fetchPendingRequests,
+          ),
+        ],
       ),
-      body: _pendingAppointments.isEmpty
+      body: _isLoading
+          ? const Center(child: CircularProgressIndicator())
+          : _pendingAppointments.isEmpty
           ? _buildEmptyState(l10n)
-          : ListView.builder(
-              padding: const EdgeInsets.all(20),
-              itemCount: _pendingAppointments.length,
-              itemBuilder: (context, index) {
-                final request = _pendingAppointments[index];
-                return _buildRequestCard(request, index, l10n);
-              },
+          : RefreshIndicator(
+              onRefresh: _fetchPendingRequests,
+              child: ListView.builder(
+                padding: const EdgeInsets.all(20),
+                itemCount: _pendingAppointments.length,
+                itemBuilder: (context, index) {
+                  final request = _pendingAppointments[index];
+                  return _buildRequestCard(request, index, l10n);
+                },
+              ),
             ),
     );
   }
 
   Widget _buildRequestCard(
-    Map<String, String> request,
+    Map<String, dynamic> request,
     int index,
     AppLocalizations l10n,
   ) {
-    String initial = request['name']![0];
+    String name = request['parent_name'] ?? 'Unknown Parent';
+    String initial = name.isNotEmpty ? name[0] : '?';
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       padding: const EdgeInsets.all(20),
@@ -111,7 +206,7 @@ class _PendingRequestsPageState extends State<PendingRequestsPage> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      request['name']!,
+                      name,
                       style: const TextStyle(
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
@@ -119,7 +214,7 @@ class _PendingRequestsPageState extends State<PendingRequestsPage> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      request['type']!,
+                      request['session_type'] ?? 'Session',
                       style: TextStyle(color: Colors.grey[600], fontSize: 13),
                     ),
                   ],
@@ -137,7 +232,7 @@ class _PendingRequestsPageState extends State<PendingRequestsPage> {
                 child: Column(
                   children: [
                     Text(
-                      request['date']!,
+                      request['day_label'] ?? '',
                       style: const TextStyle(
                         color: Colors.blue,
                         fontWeight: FontWeight.bold,
@@ -145,7 +240,7 @@ class _PendingRequestsPageState extends State<PendingRequestsPage> {
                       ),
                     ),
                     Text(
-                      request['time']!,
+                      request['time'] ?? '',
                       style: const TextStyle(color: Colors.blue, fontSize: 10),
                     ),
                   ],
@@ -205,10 +300,11 @@ class _PendingRequestsPageState extends State<PendingRequestsPage> {
           const SizedBox(height: 10),
           Text(
             l10n.noPendingAppointments,
-            style: TextStyle(color: Colors.grey[500]),
+            style: TextStyle(color: Colors.grey[50]),
           ),
         ],
       ),
     );
   }
 }
+
