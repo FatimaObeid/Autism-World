@@ -77,11 +77,38 @@ class _LoginPageState extends State<LoginPage> {
             (route) => false,
           );
         } else if (extractedRole == 'specialist') {
-          Navigator.pushAndRemoveUntil(
-            context,
-            MaterialPageRoute(builder: (context) => const SpecialistPage()),
-            (route) => false,
-          );
+          // Check approval status from login response
+          final specialistStatus = data['user']?['specialist_status'];
+          if (specialistStatus == 'approved') {
+            Navigator.pushAndRemoveUntil(
+              context,
+              MaterialPageRoute(builder: (context) => const SpecialistPage()),
+              (route) => false,
+            );
+          } else if (specialistStatus == 'declined') {
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Your specialist application has been declined. Please contact support.',
+                ),
+                backgroundColor: Colors.red,
+                duration: Duration(seconds: 5),
+              ),
+            );
+          } else {
+            // null or 'pending' — not yet approved
+            if (!mounted) return;
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text(
+                  'Your account is pending admin approval. Please check back later.',
+                ),
+                backgroundColor: Colors.orange,
+                duration: Duration(seconds: 5),
+              ),
+            );
+          }
         } else if (extractedRole == 'volunteer') {
           Navigator.pushAndRemoveUntil(
             context,
