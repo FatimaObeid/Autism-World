@@ -211,11 +211,25 @@ class _AdminPageState extends State<AdminPage> {
 
                     const SizedBox(height: 30),
 
-                    // --- PENDING VOLUNTEER WORKSHOPS ---
                     _buildSectionHeader("Pending Volunteer Workshops"),
-                    // ... your workshop code remains here ...
+                    if (pendingWorkshops.isEmpty)
+                      _buildEmptyPlaceholder(
+                        "No pending volunteer workshops to review",
+                      )
+                    else
+                      ...pendingWorkshops.asMap().entries.map((e) {
+                        final item = e.value;
+                        return _buildApprovalCard(
+                          item['title'] ?? "No Title",
+                          "Proposed by: ${item['proposed_by'] ?? 'Unknown'}",
+                          "Description: ${item['description'] ?? ''}\nScheduled Date: ${item['scheduled_date'] ?? 'TBD'}",
+                          Icons.volunteer_activism,
+                          accentTeal,
+                          () => handleWorkshopStatus(e.key, approve: true),
+                          () => handleWorkshopStatus(e.key, approve: false),
+                        );
+                      }),
 
-                    // --- ADDED HERE: PENDING SPECIALIST APPLICATIONS ---
                     _buildSectionHeader("Pending Specialist Applications"),
                     if (specialists
                         .where((s) => s["status"] == "pending")
@@ -669,36 +683,34 @@ class _AdminPageState extends State<AdminPage> {
     ),
   );
 
-  // POST - Share Autism Learning Resource
   void openResourceDialog({int? index}) {
     final isEdit = index != null;
     final titleEnC = TextEditingController(
-      text: isEdit ? resources[index]["title_en"] : "",
+      text: isEdit ? resources[index]["title_en"] ?? "" : "",
     );
     final titleArC = TextEditingController(
-      text: isEdit ? resources[index]["title_ar"] : "",
+      text: isEdit ? resources[index]["title_ar"] ?? "" : "",
     );
     final catEnC = TextEditingController(
-      text: isEdit ? resources[index]["category_en"] : "",
+      text: isEdit ? resources[index]["category_en"] ?? "" : "",
     );
     final catArC = TextEditingController(
-      text: isEdit ? resources[index]["category_ar"] : "",
+      text: isEdit ? resources[index]["category_ar"] ?? "" : "",
     );
     final descEnC = TextEditingController(
-      text: isEdit ? resources[index]["description_en"] : "",
+      text: isEdit ? resources[index]["description_en"] ?? "" : "",
     );
     final descArC = TextEditingController(
-      text: isEdit ? resources[index]["description_ar"] : "",
+      text: isEdit ? resources[index]["description_ar"] ?? "" : "",
+    );
+    final iconC = TextEditingController(
+      text: isEdit ? resources[index]["icon"] ?? "" : "",
     );
 
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(
-          isEdit
-              ? "Resource Editing Temporarily Paused"
-              : "Share Autism Resource",
-        ),
+        title: Text(isEdit ? "Edit Resource" : "Share Autism Resource"),
         content: SingleChildScrollView(
           child: Column(
             children: [
@@ -734,69 +746,95 @@ class _AdminPageState extends State<AdminPage> {
                 maxLines: 2,
                 decoration: const InputDecoration(labelText: "الوصف (العربية)"),
               ),
+              TextField(
+                controller: iconC,
+                decoration: const InputDecoration(
+                  labelText: "Icon (optional - e.g., Icons.menu_book)",
+                ),
+              ),
             ],
           ),
         ),
-
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
             child: const Text("Cancel"),
           ),
-          if (!isEdit)
-            ElevatedButton(
-              onPressed: () async {
-                final payload = {
-                  "title_en": titleEnC.text,
-                  "title_ar": titleArC.text,
-                  "category_en": catEnC.text,
-                  "category_ar": catArC.text,
-                  "description_en": descEnC.text,
-                  "description_ar": descArC.text,
-                };
-                Navigator.pop(context);
-                setState(() => isLoading = true);
+          ElevatedButton(
+            onPressed: () async {
+              final payload = {
+                "title_en": titleEnC.text,
+                "title_ar": titleArC.text,
+                "category_en": catEnC.text,
+                "category_ar": catArC.text,
+                "description_en": descEnC.text,
+                "description_ar": descArC.text,
+                "icon": iconC.text,
+              };
+              Navigator.pop(context);
+              setState(() => isLoading = true);
 
-                final token = await _getToken();
-                if (token == null) {
-                  _redirectToLogin();
-                  return;
-                }
+              final token = await _getToken();
+              if (token == null) {
+                _redirectToLogin();
+                return;
+              }
 
-                try {
-                  final response = await http.post(
-                    Uri.parse('$baseUrl/api/admin/resources'),
-                    headers: {
-                      'Authorization': 'Bearer $token',
-                      'Content-Type': 'application/json',
-                      'Accept': 'application/json',
-                    },
+              final headers = {
+                'Authorization': 'Bearer $token',
+                'Content-Type': 'application/json',
+                'Accept': 'application/json',
+              };
+
+              try {
+                http.Response response;
+
+                if (isEdit) {
+                  // Use PUT for update (your backend uses updateResource with PUT)
+                  response = await http.put(
+                    Uri.parse(
+                      '$baseUrl/api/admin/resources/${resources[index]['id']}',
+                    ),
+                    headers: headers,
                     body: json.encode(payload),
                   );
-                  if (response.statusCode == 200 ||
-                      response.statusCode == 201) {
-                    _showFeedbackSnackBar(
-                      "Bilingual parent resource published!",
-                      Colors.green,
-                    );
-                  } else if (response.statusCode == 401) {
-                    _redirectToLogin();
-                  } else {
-                    _showFeedbackSnackBar(
-                      "Failed to save resource context asset.",
-                      Colors.red,
-                    );
-                  }
-                } catch (e) {
-                  _showFeedbackSnackBar(
-                    "Network Exception Error: $e",
-                    Colors.red,
+                } else {
+                  // Use POST for create
+                  response = await http.post(
+                    Uri.parse('$baseUrl/api/admin/resources'),
+                    headers: headers,
+                    body: json.encode(payload),
                   );
                 }
-                await fetchDashboardData();
-              },
-              child: const Text("Publish"),
-            ),
+
+                if (response.statusCode == 200 || response.statusCode == 201) {
+                  _showFeedbackSnackBar(
+                    isEdit
+                        ? "Resource updated successfully!"
+                        : "Bilingual parent resource published!",
+                    Colors.green,
+                  );
+                  await fetchDashboardData();
+                } else if (response.statusCode == 401) {
+                  _redirectToLogin();
+                } else {
+                  final errorBody = json.decode(response.body);
+                  _showFeedbackSnackBar(
+                    errorBody['message'] ?? "Failed to save resource.",
+                    Colors.red,
+                  );
+                  setState(() => isLoading = false);
+                }
+              } catch (e) {
+                _showFeedbackSnackBar(
+                  "Network Exception Error: $e",
+                  Colors.red,
+                );
+                setState(() => isLoading = false);
+              }
+            },
+            child: Text(isEdit ? "Update" : "Publish"),
+          ),
         ],
       ),
     );
