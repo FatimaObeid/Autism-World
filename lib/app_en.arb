@@ -175,10 +175,22 @@
   "declinedRequest": "Declined request from {name}",
   "@acceptedRequest": { "placeholders": { "name": { "type": "String" } } },
   "@declinedRequest": { "placeholders": { "name": { "type": "String" } } },
-  "welcomeSpecialist": "Welcome, Dr. {name}!",
-  "@welcomeSpecialist": { "placeholders": { "name": { "type": "String" } } },
+"welcomeSpecialist": "Welcome, {specialization} {name}!",
+"@welcomeSpecialist": {
+  "description": "A welcome message for the specialist dashboard showing their title/specialization.",
+  "placeholders": {
+    "specialization": {
+      "type": "String",
+      "example": "Dr."
+    },
+    "name": {
+      "type": "String",
+      "example": "John Doe"
+    }
+  }
+},
   "appointmentsCount": "You have {count} appointments today.",
-  "@appointmentsCount": { "placeholders": { "count": { "type": "String" } } },
+  "@appointmentsCount": { "placeholders": { "count": { "type": "int" } } },
   "upNextSpecialist": "Up Next",
   "startsInMinutes": "Starts in {minutes} mins",
   "@startsInMinutes": { "placeholders": { "minutes": { "type": "String" } } },
@@ -212,6 +224,31 @@
   "myWorkshops": "My Workshops",
   "noApprovedWorkshops": "No approved workshops yet",
   "noPendingWorkshops": "No pending workshops",
-  "workshopAdded": "Workshop added successfully!"
+  "workshopAdded": "Workshop added successfully!",
+  "targetAudience":"Target Audience",
+  "myClientsTitle": "My Clients",
+"failedToLoadClients": "Failed to load clients data.",
+"serverError": "Server error: {statusCode}",
+"@serverError": {
+  "placeholders": {
+    "statusCode": {
+      "type": "String"
+    }
+  }
+},
+"connectionFailed": "Connection failed. Please check your network connection.",
+"retryButton": "Retry",
+"noAssignedClients": "No assigned clients found.",
+"ageLabel": "Age",
+"parentLabel": "Parent",
+"lastSessionLabel": "Last Session:",
+"noSessionNotes": "No session notes yet.",
+"nextPlanLabel": "Next Plan:",
+"noPlanSet": "No plan set yet.",
+"viewCompleteDetails": "View Complete Details",
+"unknownName": "Unknown Name",
+"notAvailable": "N/A",
+"notSpecified": "Not specified",
+"noDescriptionProvided": "No description provided"
   
 }
