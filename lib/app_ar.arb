@@ -198,19 +198,22 @@
       }
     }
   },
-  "welcomeSpecialist": "مرحباً، د. {name}!",
-  "@welcomeSpecialist": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
+"welcomeSpecialist": "مرحباً، {specialization} {name}!",
+"@welcomeSpecialist": {
+  "placeholders": {
+    "specialization": {
+      "type": "String"
+    },
+    "name": {
+      "type": "String"
     }
-  },
+  }
+},
   "appointmentsCount": "لديك {count} مواعيد اليوم.",
   "@appointmentsCount": {
     "placeholders": {
       "count": {
-        "type": "String"
+        "type": "int"
       }
     }
   },
@@ -245,6 +248,25 @@
   "myWorkshops": "ورش العمل الخاصة بي",
   "noApprovedWorkshops": "لا توجد ورش عمل معتمدة حتى الآن",
   "noPendingWorkshops": "لا توجد ورش عمل معلقة",
-  "workshopAdded": "تمت إضافة ورشة العمل بنجاح!"
+  "workshopAdded": "تمت إضافة ورشة العمل بنجاح!",
+  "targetAudience":"الفئة المستهدفة",
+  "myClientsTitle": "عملائي",
+"failedToLoadClients": "فشل في تحميل بيانات العملاء.",
+"serverError": "خطأ في الخادم: {statusCode}",
+"connectionFailed": "فشل الاتصال. يرجى التحقق من اتصال الشبكة الخاص بك.",
+"retryButton": "إعادة المحاولة",
+"noAssignedClients": "لم يتم العثور على عملاء معينين.",
+"ageLabel": "العمر",
+"parentLabel": "ولي الأمر",
+"lastSessionLabel": "الجلسة الأخيرة:",
+"noSessionNotes": "لا توجد ملاحظات جلسة بعد.",
+"nextPlanLabel": "الخطة القادمة:",
+"noPlanSet": "لم يتم تحديد خطة بعد.",
+"viewCompleteDetails": "عرض التفاصيل الكاملة",
+"unknownName": "اسم غير معروف",
+"notAvailable": "غير محدد",
+"notSpecified": "غير محدد",
+"noDescriptionProvided": "لم يتم تقديم وصف"
+
 
 }
