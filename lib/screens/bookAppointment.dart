@@ -1,10 +1,14 @@
 import 'dart:convert';
 import 'dart:io' show Platform;
+import 'package:autism_world/screens/ChildPage.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:autism_world/l10n/app_localizations.dart';
+
+// 🌟 IMPORTANT: Import your Child Registration / Add Child page here!
+// Example: import 'package:autism_world/pages/add_child_page.dart';
 
 class BookAppointment extends StatefulWidget {
   const BookAppointment({super.key});
@@ -76,9 +80,7 @@ class _BookAppointmentState extends State<BookAppointment> {
       // API Endpoints
       final childDashboardUri = Uri.parse("$baseUrl/api/parent/children");
       final parentDashboardUri = Uri.parse("$baseUrl/api/parent/dashboard");
-      final specialistsUri = Uri.parse(
-        "$baseUrl/api/parent/specialists",
-      ); // Fetching the real deal now
+      final specialistsUri = Uri.parse("$baseUrl/api/parent/specialists");
 
       final headers = {
         "Accept": "application/json",
@@ -115,7 +117,6 @@ class _BookAppointmentState extends State<BookAppointment> {
               childData['data']['parent_profile']['id'].toString(),
             );
           } else {
-            // Fallback default safe value for sandbox simulation testing matching backend expectations
             parentProfileId = parentData['user_id'] ?? 16;
           }
 
@@ -128,7 +129,10 @@ class _BookAppointmentState extends State<BookAppointment> {
               final singleChild = childrenList.first;
               automaticallySelectedChildId = singleChild['id'].toString();
               automaticallySelectedChildName =
-                  singleChild['full_name'] ?? 'Unnamed Profile Context';
+                  singleChild['full_name']; // Removed default placeholder fallback
+            } else {
+              automaticallySelectedChildId = null;
+              automaticallySelectedChildName = null;
             }
           }
 
@@ -145,27 +149,19 @@ class _BookAppointmentState extends State<BookAppointment> {
           if (specialistsData['success'] == true &&
               specialistsData['specialists'] != null) {
             final List rawSpecs = specialistsData['specialists'];
+
             allSpecialists = rawSpecs.map<Map<String, dynamic>>((item) {
               return {
                 "id": item['id'],
-                "specialization": item['therapy_type'] ?? "General Therapy",
+                "specialization":
+                    item['therapy_type'] ??
+                    item['specialization'] ??
+                    "General Therapy",
                 "user": {
                   "name": item['user']?['name'] ?? "Certified Specialist",
                 },
               };
             }).toList();
-          }
-
-          // Safety absolute fallback if your local DB specialists table is empty during testing
-          if (allSpecialists.isEmpty) {
-            allSpecialists = [
-              {
-                "id":
-                    1, // Ensure this ID actually exists in your DB before running!
-                "specialization": "Occupational Therapy",
-                "user": {"name": "Dr. Emily Watson (Sensory Integration)"},
-              },
-            ];
           }
 
           _filterSpecialistsByCategory(selectedCategory);
@@ -185,14 +181,27 @@ class _BookAppointmentState extends State<BookAppointment> {
     }
   }
 
+  // --- SMART INCLUSIVE FILTERING FUNCTION ---
   void _filterSpecialistsByCategory(String category) {
     setState(() {
+      final String rootKeyword = category.split(' ').first.toLowerCase();
+
       filteredSpecialists = allSpecialists.where((spec) {
         final String specType = (spec['specialization'] ?? '')
             .toString()
             .toLowerCase();
-        return specType.contains(category.toLowerCase());
+
+        // Safe layout check: Match by keyword, or show if general/unassigned text is detected
+        return specType.contains(rootKeyword) ||
+            specType == "general therapy" ||
+            specType.isEmpty;
       }).toList();
+
+      // Absolute safety fallback: If filtering hid everyone, show all specialists so the user can pick
+      if (filteredSpecialists.isEmpty) {
+        filteredSpecialists = List.from(allSpecialists);
+      }
+
       selectedSpecialistId = null;
     });
   }
@@ -205,6 +214,19 @@ class _BookAppointmentState extends State<BookAppointment> {
       lastDate: DateTime.now().add(const Duration(days: 90)),
     );
     if (picked != null) {
+      // WEEKEND CHECK: Block Saturday (6) and Sunday (7)
+      if (picked.weekday == DateTime.saturday ||
+          picked.weekday == DateTime.sunday) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            backgroundColor: Colors.orange,
+            content: Text(
+              "Appointments cannot be booked on weekends (Saturday and Sunday). Please choose a weekday.",
+            ),
+          ),
+        );
+        return;
+      }
       setState(() => selectedDate = picked);
     }
   }
@@ -220,6 +242,18 @@ class _BookAppointmentState extends State<BookAppointment> {
   }
 
   Future<void> _submitAppointment() async {
+    if (automaticallySelectedChildId == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          backgroundColor: Colors.orange,
+          content: Text(
+            "Error: No registered child profile was found to link to this appointment.",
+          ),
+        ),
+      );
+      return;
+    }
+
     if (!_formKey.currentState!.validate() ||
         selectedDate == null ||
         selectedTime == null ||
@@ -245,9 +279,7 @@ class _BookAppointmentState extends State<BookAppointment> {
           "${selectedTime!.hour.toString().padLeft(2, '0')}:${selectedTime!.minute.toString().padLeft(2, '0')}:00";
 
       final Map<String, dynamic> requestPayload = {
-        "child_id": int.parse(
-          automaticallySelectedChildId ?? "4",
-        ), // Safely falls back if missing
+        "child_id": int.parse(automaticallySelectedChildId!),
         "specialist_id": int.parse(selectedSpecialistId!),
         "appointment_time": formattedDateTime,
         "therapy_type": selectedCategory,
@@ -273,7 +305,10 @@ class _BookAppointmentState extends State<BookAppointment> {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
             backgroundColor: Colors.green,
-            content: Text("Appointment successfully reserved!"),
+            // 🌟 Updated text to reflect the actual status
+            content: Text(
+              "Appointment request sent! Waiting for specialist approval.",
+            ),
           ),
         );
         Navigator.pop(context);
@@ -329,49 +364,88 @@ class _BookAppointmentState extends State<BookAppointment> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // 1. Child Display Box
+              // 1. Child Display Box (Clickable Integration)
+              // 1. Child Display Box (Clickable Integration)
               _buildSectionTitle("Child Profile Context"),
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.white,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: const Color(0xFFE2E8F0)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      Icons.child_care_outlined,
-                      color: primaryBlue,
-                      size: 24,
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            automaticallySelectedChildName ?? "hoh",
-                            style: const TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF0F172A),
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          const Text(
-                            "Booking session for your registered profile",
-                            style: TextStyle(fontSize: 12, color: Colors.grey),
-                          ),
-                        ],
+              GestureDetector(
+                onTap: () {
+                  // If there is no registered child, navigate parent to complete info
+                  if (automaticallySelectedChildName == null) {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        // 🌟 REPLACE 'AddChildPage()' with your actual child form class name!
+                        builder: (context) => ChildPage(),
                       ),
+                    ).then((_) {
+                      // Automatically refresh layout state items upon return
+                      setState(() => _isInitializing = true);
+                      _fetchInitialData();
+                    });
+                  }
+                },
+                child: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: automaticallySelectedChildName == null
+                          ? Colors.orangeAccent
+                          : const Color(0xFFE2E8F0),
+                      width: automaticallySelectedChildName == null ? 1.5 : 1,
                     ),
-                  ],
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.child_care_outlined,
+                        color: automaticallySelectedChildName == null
+                            ? Colors.orange
+                            : primaryBlue,
+                        size: 24,
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              automaticallySelectedChildName ??
+                                  "Click here to register child info ⚠️",
+                              style: TextStyle(
+                                fontSize: 15,
+                                fontWeight: FontWeight.w600,
+                                color: automaticallySelectedChildName == null
+                                    ? Colors.orange[800]
+                                    : const Color(0xFF0F172A),
+                              ),
+                            ),
+                            const SizedBox(height: 2),
+                            Text(
+                              automaticallySelectedChildName != null
+                                  ? "Booking session for your registered profile"
+                                  : "No child profile linked. Tap to setup now.",
+                              style: const TextStyle(
+                                fontSize: 12,
+                                color: Colors.grey,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      if (automaticallySelectedChildName == null)
+                        const Icon(
+                          Icons.arrow_forward_ios,
+                          size: 14,
+                          color: Colors.orange,
+                        ),
+                    ],
+                  ),
                 ),
               ),
               const SizedBox(height: 20),
-
               // 2. Contact Phone Field
               _buildSectionTitle("Parent Contact Phone Number"),
               TextFormField(
