@@ -42,6 +42,48 @@ class _ChildPageState extends State<ChildPage> {
     return "http://127.0.0.1:8000";
   }
 
+  @override
+  void initState() {
+    super.initState();
+    _fetchProfile();
+  }
+
+  Future<void> _fetchProfile() async {
+    setState(() => _isLoading = true);
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token') ?? '';
+      final response = await http.get(
+        Uri.parse("$baseUrl/api/parent/children"),
+        headers: {
+          "Accept": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+      if (response.statusCode == 200) {
+        final data = jsonDecode(response.body);
+        if (data['success'] == true && data['data']['children'] != null && data['data']['children'].isNotEmpty) {
+          final child = data['data']['children'][0];
+          setState(() {
+            _nameController.text = child['full_name'] ?? '';
+            _dobController.text = child['dob'] ?? '';
+            String genderStr = child['gender']?.toString().toLowerCase() ?? '';
+            _selectedGender = genderStr == 'male' ? 'Male' : (genderStr == 'female' ? 'Female' : null);
+            _autismLevel = child['autism_level'];
+            _descriptionController.text = child['description'] ?? '';
+            _hasSevereCondition = child['has_other_disease'] == 'yes';
+            _medicalDetailsController.text = child['medical_condition'] ?? '';
+            _importantNotesController.text = child['important_notes'] ?? '';
+          });
+        }
+      }
+    } catch (e) {
+      print("Error fetching profile: $e");
+    } finally {
+      setState(() => _isLoading = false);
+    }
+  }
+
   Future<void> _selectDate(BuildContext context) async {
     final DateTime? picked = await showDatePicker(
       context: context,
@@ -78,7 +120,7 @@ class _ChildPageState extends State<ChildPage> {
       final token = prefs.getString('auth_token') ?? '';
 
       final response = await http.post(
-        Uri.parse("$baseUrl/api/children"),
+        Uri.parse("$baseUrl/api/parent/children"),
         headers: {
           "Accept": "application/json",
           "Content-Type": "application/json",
