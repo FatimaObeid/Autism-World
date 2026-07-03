@@ -221,8 +221,8 @@ class _AdminPageState extends State<AdminPage> {
                         final item = e.value;
                         return _buildApprovalCard(
                           item['title'] ?? "No Title",
-                          "Proposed by: ${item['proposed_by'] ?? 'Unknown'}",
-                          "Description: ${item['description'] ?? ''}\nScheduled Date: ${item['scheduled_date'] ?? 'TBD'}",
+                          "Proposed by: ${item['volunteer']?['user']?['name'] ?? 'Unknown'}",
+                          "Location: ${item['location'] ?? ''}\nTarget Audience: ${item['target_audience'] ?? ''}\nScheduled Date: ${item['date'] ?? 'TBD'} at ${item['workshop_time'] ?? ''}",
                           Icons.volunteer_activism,
                           accentTeal,
                           () => handleWorkshopStatus(e.key, approve: true),
