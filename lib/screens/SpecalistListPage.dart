@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'dart:io' show Platform;
-import 'package:autism_world/screens/chat.dart';
+import 'package:autism_world/Parent/ParentChatPage.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
@@ -40,7 +40,7 @@ class _SpecialistListPageState extends State<SpecialistListPage> {
       final token = prefs.getString('auth_token') ?? '';
 
       final response = await http.get(
-        Uri.parse("$baseUrl/api/specialists"),
+        Uri.parse("$baseUrl/api/parent/specialists"),
         headers: {
           "Accept": "application/json",
           "Authorization": "Bearer $token",
@@ -175,11 +175,22 @@ class _SpecialistListPageState extends State<SpecialistListPage> {
       itemBuilder: (context, index) {
         final spec = _serverSpecialists[index];
 
-        final int userId =
-            spec['user']['id']; // Grab the user id to bind chat instances
-        final String name = spec['user']['name'];
-        final String specialty = spec['therapy_type'] ?? 'General Therapy';
-        final int experienceYears = spec['experience_years'] ?? 0;
+        // Safely parse IDs and numbers — JSON integers sometimes arrive as
+        // strings depending on Laravel's serialisation, causing the
+        // "type 'String' is not a subtype of type 'int'" crash.
+        final dynamic rawUserId = spec['user']['id'];
+        final int userId = rawUserId is int
+            ? rawUserId
+            : int.tryParse(rawUserId.toString()) ?? 0;
+
+        final String name = spec['user']['name']?.toString() ?? 'Unknown';
+        final String specialty =
+            spec['therapy_type']?.toString() ?? 'General Therapy';
+
+        final dynamic rawExp = spec['experience_years'];
+        final int experienceYears = rawExp is int
+            ? rawExp
+            : int.tryParse(rawExp?.toString() ?? '0') ?? 0;
 
         final String bio = isArabic
             ? "هذا الأخصائي معتمد ومسجل لتقديم الدعم التخصصي والبرامج التأهيلية الشاملة."
@@ -318,7 +329,7 @@ class _SpecialistListPageState extends State<SpecialistListPage> {
                       Navigator.push(
                         context,
                         MaterialPageRoute(
-                          builder: (context) => ParentChatScreen(
+                          builder: (context) => ParentChatPage(
                             specialistId: userId,
                             specialistName: name,
                           ),
