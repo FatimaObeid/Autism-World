@@ -382,9 +382,7 @@ class _SpecialistPageState extends State<SpecialistPage> {
                 ),
               ),
               Text(
-                l10n.startsInMinutes(
-                  "15",
-                ), // Swap with API metadata if available
+                _nextAppointment!['starts_in'] ?? '',
                 style: const TextStyle(
                   color: accentTeal,
                   fontSize: 12,
