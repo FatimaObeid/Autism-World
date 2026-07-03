@@ -4,17 +4,21 @@ import 'dart:convert';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:intl/intl.dart';
 
-class ChatPage extends StatefulWidget {
-  final dynamic parentId;
-  final String childName;
+class ParentChatPage extends StatefulWidget {
+  final dynamic specialistId;
+  final String specialistName;
 
-  const ChatPage({super.key, required this.parentId, required this.childName});
+  const ParentChatPage({
+    super.key,
+    required this.specialistId,
+    required this.specialistName,
+  });
 
   @override
-  State<ChatPage> createState() => _ChatPageState();
+  State<ParentChatPage> createState() => _ParentChatPageState();
 }
 
-class _ChatPageState extends State<ChatPage> {
+class _ParentChatPageState extends State<ParentChatPage> {
   final TextEditingController _messageController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   List<Map<String, dynamic>> _messages = [];
@@ -66,10 +70,10 @@ class _ChatPageState extends State<ChatPage> {
         return;
       }
 
-      // Fetch messages between specialist and parent
+      // Fetch messages between parent and specialist
       final response = await http.get(
         Uri.parse(
-          'http://127.0.0.1:8000/api/messages/parent/${widget.parentId}',
+          'http://127.0.0.1:8000/api/messages/specialist/${widget.specialistId}',
         ),
         headers: {
           'Authorization': 'Bearer $token',
@@ -79,8 +83,19 @@ class _ChatPageState extends State<ChatPage> {
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
+        // Backend returns a raw JSON array — detect type before indexing
+        List<dynamic> rawList;
+        if (data is List) {
+          rawList = data;
+        } else if (data is Map) {
+          rawList = (data['messages'] ?? data['data'] ?? []) as List<dynamic>;
+        } else {
+          rawList = [];
+        }
         setState(() {
-          _messages = List<Map<String, dynamic>>.from(data['messages'] ?? data);
+          _messages = rawList
+              .map((e) => Map<String, dynamic>.from(e as Map))
+              .toList();
           _isLoading = false;
         });
         WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -130,8 +145,9 @@ class _ChatPageState extends State<ChatPage> {
           'Accept': 'application/json',
         },
         body: json.encode({
-          'recipient_id': widget.parentId,
-          'recipient_type': 'parent', // Identifies the recipient as parent
+          'recipient_id': widget.specialistId,
+          'recipient_type':
+              'specialist', // Identifies the recipient as specialist
           'content': message,
         }),
       );
@@ -189,11 +205,11 @@ class _ChatPageState extends State<ChatPage> {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             const Text(
-              "Chat with Parent",
+              "Chat with Specialist",
               style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
             ),
             Text(
-              widget.childName,
+              widget.specialistName,
               style: const TextStyle(
                 fontSize: 14,
                 fontWeight: FontWeight.normal,
@@ -263,7 +279,7 @@ class _ChatPageState extends State<ChatPage> {
                         ),
                         const SizedBox(height: 8),
                         Text(
-                          'Start the conversation with the parent!',
+                          'Start the conversation with the specialist!',
                           style: TextStyle(
                             fontSize: 14,
                             color: Colors.grey[500],
@@ -278,10 +294,9 @@ class _ChatPageState extends State<ChatPage> {
                     itemCount: _messages.length,
                     itemBuilder: (context, index) {
                       final message = _messages[index];
-                      // Determine if message is sent by the current specialist
-                      // This depends on your backend response structure
+                      // Determine if message is sent by the current parent
                       final isSentByMe =
-                          message['sender_type'] == 'specialist' ||
+                          message['sender_type'] == 'parent' ||
                           message['sender_id'] == _currentUserId ||
                           message['is_sent_by_me'] == true;
 
@@ -289,7 +304,7 @@ class _ChatPageState extends State<ChatPage> {
                         message['content'] ?? message['message'] ?? '',
                         isSentByMe,
                         message['sender_name'] ??
-                            (isSentByMe ? 'You' : 'Parent'),
+                            (isSentByMe ? 'You' : 'Specialist'),
                         message['created_at'] ?? message['timestamp'] ?? '',
                       );
                     },
