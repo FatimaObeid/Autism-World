@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io' show Platform;
+import 'package:autism_world/aiChatScreen.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:autism_world/screens/Parent/bookAppointment.dart';
 import 'package:autism_world/screens/SpecialistList.dart';
@@ -119,6 +120,24 @@ class _ParentPageState extends State<ParentPage> {
           ),
         ],
       ),
+
+      // --- FLOATING AI BUTTON ADDED HERE ---
+      floatingActionButton: FloatingActionButton.extended(
+        onPressed: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const AiChatScreen()),
+          );
+        },
+        backgroundColor: primaryBlue,
+        icon: const Icon(Icons.auto_awesome, color: Colors.white),
+        label: const Text(
+          "Ask AI",
+          style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+        ),
+      ),
+
+      // -------------------------------------
       body: RefreshIndicator(
         onRefresh: _fetchDashboardPayload,
         color: primaryBlue,
@@ -582,4 +601,3 @@ class _ParentPageState extends State<ParentPage> {
   }
 }
 
-}
