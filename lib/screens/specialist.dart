@@ -1,17 +1,18 @@
 import 'dart:convert';
+import 'package:autism_world/aiChatScreen.dart';
 import 'package:autism_world/screens/login.dart';
+import 'package:autism_world/screens/specialist/communityEvents.dart';
+import 'package:autism_world/screens/specialist/myclientsPage.dart';
+import 'package:autism_world/screens/specialist/pendingRequest.dart';
+import 'package:autism_world/screens/specialist/upcoming_appt.dart';
+import 'package:autism_world/settings/settings.dart';
+import 'package:autism_world/settings/settings_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http; // Fixed: Added missing http import
 import 'package:provider/provider.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:autism_world/l10n/app_localizations.dart';
-import 'package:autism_world/screens/settings.dart';
-import 'package:autism_world/screens/settings_provider.dart';
-import 'package:autism_world/specialist/community_events.dart';
-import 'package:autism_world/specialist/myclientsPage.dart';
-import 'package:autism_world/specialist/pending_requests_page.dart';
-import 'package:autism_world/specialist/upcoming_appt.dart';
 
 class SpecialistPage extends StatefulWidget {
   const SpecialistPage({super.key});
@@ -170,6 +171,24 @@ class _SpecialistPageState extends State<SpecialistPage> {
             ),
           ],
         ),
+
+        // --- FLOATING AI BUTTON ADDED HERE ---
+        floatingActionButton: FloatingActionButton.extended(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AiChatScreen()),
+            );
+          },
+          backgroundColor: primaryBlue,
+          icon: const Icon(Icons.auto_awesome, color: Colors.white),
+          label: const Text(
+            "Ask AI",
+            style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+          ),
+        ),
+        // -------------------------------------
+
         // Handled: Show screens dynamically based on network state
         body: _isLoading
             ? const Center(child: CircularProgressIndicator())
