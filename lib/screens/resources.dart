@@ -45,13 +45,11 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
   /// Fetches admin-populated items from ParentProfileController dynamically
   Future<void> _fetchResourcesFromBackend() async {
     try {
-      // 1. Retrieve the parent's authenticated login token
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token') ?? '';
 
-      // 2. Query the endpoint securely via ParentProfileController
       final response = await http.get(
-        Uri.parse("$baseUrl/api/resources"),
+        Uri.parse("$baseUrl/api/parent/resources"),
         headers: {
           "Accept": "application/json",
           "Authorization": "Bearer $token",
@@ -69,8 +67,7 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
         }
       } else {
         setState(() {
-          _errorMessage =
-              "Server authentication error status code: ${response.statusCode}";
+          _errorMessage = "Server error status code: ${response.statusCode}";
           _isLoading = false;
         });
       }
@@ -118,12 +115,15 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
     }
   }
 
-  /// Splitting utility logic supporting bilingual administration layouts ("EN | AR")
+  /// Splitting utility logic supporting bilingual layouts ("EN | AR") and regular plain text descriptions
   String _getLocalText(String dbValue, bool isArabic) {
+    if (dbValue.isEmpty) return dbValue;
+
     if (dbValue.contains('|')) {
       final parts = dbValue.split('|');
       if (parts.length >= 2) {
-        return isArabic ? parts[1].trim() : parts[0].trim();
+        final selectedText = isArabic ? parts[1].trim() : parts[0].trim();
+        return selectedText.isNotEmpty ? selectedText : parts[0].trim();
       }
     }
     return dbValue;
@@ -131,12 +131,17 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final l10n = AppLocalizations.of(context)!;
+    final localizations = AppLocalizations.of(context);
+    final String titleText =
+        localizations?.resourcesTitle ?? 'Learning Resources';
+    final String searchPlaceholder =
+        localizations?.searchHint ?? 'Search topics...';
+
     final isArabic = Localizations.localeOf(context).languageCode == 'ar';
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(l10n.resourcesTitle),
+        title: Text(titleText),
         backgroundColor: Colors.white,
         elevation: 0,
         foregroundColor: Colors.black87,
@@ -148,7 +153,7 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
             child: TextField(
               controller: _searchController,
               decoration: InputDecoration(
-                hintText: l10n.searchHint,
+                hintText: searchPlaceholder,
                 prefixIcon: const Icon(Icons.search),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(30),
@@ -158,13 +163,16 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
               ),
             ),
           ),
-          Expanded(child: _buildMainContent(l10n, isArabic)),
+          Expanded(child: _buildMainContent(localizations, isArabic)),
         ],
       ),
     );
   }
 
-  Widget _buildMainContent(AppLocalizations l10n, bool isArabic) {
+  Widget _buildMainContent(AppLocalizations? l10n, bool isArabic) {
+    final String readArticleLabel =
+        l10n?.readFullArticle ?? 'Read Full Article';
+
     if (_isLoading) {
       return const Center(
         child: CircularProgressIndicator(color: accentPurple),
@@ -266,7 +274,7 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
                               content: Text(
-                                "${l10n.readFullArticle}: ${item['url']}",
+                                "$readArticleLabel: ${item['url']}",
                               ),
                             ),
                           );
@@ -277,7 +285,7 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
                           color: accentPurple,
                         ),
                         label: Text(
-                          l10n.readFullArticle,
+                          readArticleLabel,
                           style: const TextStyle(color: accentPurple),
                         ),
                       ),
@@ -292,4 +300,3 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
     );
   }
 }
-
