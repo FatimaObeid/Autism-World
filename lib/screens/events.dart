@@ -37,7 +37,6 @@ class _EventsScreenState extends State<EventsScreen> {
       final prefs = await SharedPreferences.getInstance();
       final token = prefs.getString('auth_token') ?? '';
 
-      // URL updated to match your api.php route group
       final response = await http.get(
         Uri.parse("$baseUrl/api/parent/events"),
         headers: {
@@ -48,9 +47,10 @@ class _EventsScreenState extends State<EventsScreen> {
 
       if (response.statusCode == 200) {
         final Map<String, dynamic> data = jsonDecode(response.body);
-        if (data['success'] == true && data['events'] != null) {
+
+        if (data['success'] == true && data['data'] != null) {
           setState(() {
-            _serverEvents = data['events'];
+            _serverEvents = data['data'];
             _isLoading = false;
           });
         } else {
@@ -60,12 +60,16 @@ class _EventsScreenState extends State<EventsScreen> {
           });
         }
       } else {
+        print(
+          "LARAVEL ERROR (Status ${response.statusCode}): ${response.body}",
+        );
         setState(() {
           _errorMessage = "Server error: ${response.statusCode}";
           _isLoading = false;
         });
       }
     } catch (e) {
+      print("FLUTTER NETWORK ERROR: $e");
       setState(() {
         _errorMessage = "Network error. Please check your connection.";
         _isLoading = false;
@@ -73,8 +77,66 @@ class _EventsScreenState extends State<EventsScreen> {
     }
   }
 
+  // --- NEW FUNCTION: Registers the Parent for the Event ---
+  Future<void> _registerForEvent(int eventId, int index) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final token = prefs.getString('auth_token') ?? '';
+
+      // Calling the backend route to approve attendance
+      final response = await http.post(
+        Uri.parse("$baseUrl/api/parent/events/$eventId/approve-attendance"),
+        headers: {
+          "Accept": "application/json",
+          "Authorization": "Bearer $token",
+        },
+      );
+
+      final Map<String, dynamic> responseData = jsonDecode(response.body);
+
+      if (response.statusCode == 200 || response.statusCode == 201) {
+        // Update the UI immediately so the button turns grey!
+        setState(() {
+          _serverEvents[index]['is_registered'] = true;
+        });
+
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Successfully registered for the event!'),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      } else {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(responseData['message'] ?? 'Could not register.'),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+            ),
+          );
+        }
+      }
+    } catch (e) {
+      print("Registration Error: $e");
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Network error while registering.'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
+    // Make sure your AppLocalizations are set up properly
     final l10n = AppLocalizations.of(context)!;
     final isArabic = Localizations.localeOf(context).languageCode == 'ar';
 
@@ -167,6 +229,8 @@ class _EventsScreenState extends State<EventsScreen> {
                   'No description');
 
         final date = event['date'] ?? 'Date TBD';
+        final time = event['time'] ?? '';
+        final isRegistered = event['is_registered'] == true;
 
         return Card(
           elevation: 2,
@@ -214,7 +278,7 @@ class _EventsScreenState extends State<EventsScreen> {
                         ),
                         const SizedBox(width: 5),
                         Text(
-                          date.toString(),
+                          time.isNotEmpty ? "$date at $time" : date.toString(),
                           style: const TextStyle(
                             color: Colors.grey,
                             fontWeight: FontWeight.w500,
@@ -250,30 +314,27 @@ class _EventsScreenState extends State<EventsScreen> {
                       style: TextStyle(color: Colors.grey[800], height: 1.4),
                     ),
                     const SizedBox(height: 15),
+
+                    // --- SMART REGISTRATION BUTTON ---
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: primaryBlue,
+                          backgroundColor: isRegistered
+                              ? Colors.grey
+                              : primaryBlue,
                           foregroundColor: Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            SnackBar(
-                              content: Text(l10n.interestNoted),
-                              behavior: SnackBarBehavior.floating,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                          );
-                        },
+                        // Disable button if registered, otherwise call the API
+                        onPressed: isRegistered
+                            ? null
+                            : () => _registerForEvent(event['id'], index),
                         child: Text(
-                          l10n.imInterested,
+                          isRegistered ? "Registered" : l10n.imInterested,
                           style: const TextStyle(fontWeight: FontWeight.bold),
                         ),
                       ),
@@ -288,4 +349,3 @@ class _EventsScreenState extends State<EventsScreen> {
     );
   }
 }
-
