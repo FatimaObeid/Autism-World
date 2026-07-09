@@ -250,7 +250,6 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
-                  cross platform: CrossAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
