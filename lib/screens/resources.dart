@@ -88,13 +88,9 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
       } else {
         _filteredResources = _allResources.where((resource) {
           final title = (resource['title'] ?? '').toString().toLowerCase();
-          final description = (resource['description'] ?? '')
-              .toString()
-              .toLowerCase();
+          final description = (resource['description'] ?? '').toString().toLowerCase();
           final type = (resource['type'] ?? '').toString().toLowerCase();
-          return title.contains(query) ||
-              description.contains(query) ||
-              type.contains(query);
+          return title.contains(query) || description.contains(query) || type.contains(query);
         }).toList();
       }
     });
@@ -118,7 +114,7 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
   /// Splitting utility logic supporting bilingual layouts ("EN | AR") and regular plain text descriptions
   String _getLocalText(String dbValue, bool isArabic) {
     if (dbValue.isEmpty) return dbValue;
-
+    
     if (dbValue.contains('|')) {
       final parts = dbValue.split('|');
       if (parts.length >= 2) {
@@ -132,11 +128,9 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
   @override
   Widget build(BuildContext context) {
     final localizations = AppLocalizations.of(context);
-    final String titleText =
-        localizations?.resourcesTitle ?? 'Learning Resources';
-    final String searchPlaceholder =
-        localizations?.searchHint ?? 'Search topics...';
-
+    final String titleText = localizations?.resourcesTitle ?? 'Learning Resources';
+    final String searchPlaceholder = localizations?.searchHint ?? 'Search topics...';
+    
     final isArabic = Localizations.localeOf(context).languageCode == 'ar';
 
     return Scaffold(
@@ -170,8 +164,7 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
   }
 
   Widget _buildMainContent(AppLocalizations? l10n, bool isArabic) {
-    final String readArticleLabel =
-        l10n?.readFullArticle ?? 'Read Full Article';
+    final String readArticleLabel = l10n?.readFullArticle ?? 'Read Full Article';
 
     if (_isLoading) {
       return const Center(
@@ -257,6 +250,7 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
               Padding(
                 padding: const EdgeInsets.all(16.0),
                 child: Column(
+                  cross platform: CrossAxisAlignment.start,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
@@ -266,16 +260,13 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
                         color: Colors.black87,
                       ),
                     ),
-                    if (item['url'] != null &&
-                        item['url'].toString().isNotEmpty) ...[
+                    if (item['url'] != null && item['url'].toString().isNotEmpty) ...[
                       const SizedBox(height: 12),
                       TextButton.icon(
                         onPressed: () {
                           ScaffoldMessenger.of(context).showSnackBar(
                             SnackBar(
-                              content: Text(
-                                "$readArticleLabel: ${item['url']}",
-                              ),
+                              content: Text("$readArticleLabel: ${item['url']}"),
                             ),
                           );
                         },
@@ -300,4 +291,3 @@ class _ResourcesScreenState extends State<ResourcesScreen> {
     );
   }
 }
-
